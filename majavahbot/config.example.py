@@ -9,6 +9,6 @@ own_db_port = 3306
 own_db_option_file = path.expanduser('~/replica.my.cnf')
 own_db_database = 's54198__majavahbot'
 
-analytics_db_hostname = '{DB}.analytics.db.svc.eqiad.wmflabs'
+analytics_db_hostname = '{DB}.analytics.db.svc.wikimedia.cloud'
 analytics_db_port = 3306
 analytics_db_option_file = path.expanduser('~/replica.my.cnf')

@@ -78,8 +78,8 @@ class ReplicaDatabase(BaseDatabase):
         )
 
     def get_replag(self):
-        query = 'SELECT lag FROM heartbeat_p.heartbeat JOIN meta_p.wiki ON shard = SUBSTRING_INDEX(slice, ".", 1) WHERE dbname = %s;'
-        results = self.get_one(query, (self.db_name,))
+        query = 'SELECT lag FROM heartbeat_p.heartbeat;'
+        results = self.get_one(query)
         return results[0]
 
 
