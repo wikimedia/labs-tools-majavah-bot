@@ -117,17 +117,15 @@ class EffpTask(Task):
                     raise
 
             # subtask c: notify if filter is private
-            private = False
+            private = 0
             for hit in matching_hits:
                 # filter id seems to be empty when a filter is private
-                if hit['filter_id'] != '':
-                    pass
-                if hit['result'] != 'disallow' and hit['result'] != 'warn':
-                    pass
-                private = True
+                if hit['filter_id'] == '' and hit['result'] in ('disallow', 'warn'):
+                    private = hit['id']
+                    break
 
-            if private:
-                new_section += ':{{EFFP|p|bot=1}} ~~~~\n'
+            if private != 0:
+                new_section += ':{{EFFP|p|bot=1}}<!-- ' + str(private) + ' --> ~~~~\n'
                 edit_summary.append('Add private filter notice (task 1c)')
 
         if new_section != section:
