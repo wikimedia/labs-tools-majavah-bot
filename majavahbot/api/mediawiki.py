@@ -40,8 +40,8 @@ class MediawikiApi:
 
         return stream
 
-    def get_last_abuse_filter_trigger(self, user: str):
-        '''Retrieves latest Special:AbuseLog entry for specified user.'''
+    def get_last_filter_hits(self, user: str):
+        '''Retrieves latest Special:AbuseLog entries for specified user.'''
         self.site.login()
         request = api.Request(
             self.site,
@@ -49,27 +49,33 @@ class MediawikiApi:
             list='abuselog',
             afluser=user,
             afldir='older',
-            afllimit='1',
+            afllimit='10',
             aflprop='ids|user|title|action|result|timestamp|filter|details',
         )
         response = request.submit()['query']['abuselog']
-        if len(response) > 0:
-            return response[0]
-        return None
+        if len(response) == 0:
+            return None
 
-    def is_filter_private(self, filter_id: str) -> bool:
-        self.site.login()
-        request = api.Request(
-            self.site,
-            action='query',
-            list='abusefilters',
-            abfstartid=filter_id,
-            abfendid=filter_id,
-            abflimit=1,
-            abfshow='private',
-        )
-        response = request.submit()['query']['abusefilters']
-        return len(response) > 0
+        last_hit = response[0]
+        last_hit_timestamp = last_hit['timestamp']
+        last_hit_datetime = dateparser.parse(last_hit_timestamp)
+
+        matching_hits = [last_hit]
+
+        for hit in response[1:]:
+            hit_datetime = dateparser.parse(hit['timestamp'])
+
+            if (last_hit_datetime - hit_datetime).total_seconds() > 5:
+                # not the same action, if it took more than five seconds
+                pass
+
+            if hit['title'] != last_hit['title']:
+                # not the same page, not caused by the same action
+                pass
+
+            matching_hits.append(hit)
+
+        return matching_hits
 
     def get_last_reply(self, section: str):
         # example: 22:25, 11 September 2019 (UTC)

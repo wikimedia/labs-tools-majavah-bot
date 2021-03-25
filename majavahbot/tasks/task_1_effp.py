@@ -1,4 +1,5 @@
 from majavahbot.api import MediawikiApi
+from majavahbot.api.manual_run import confirm_edit
 from majavahbot.tasks import Task, task_registry
 from majavahbot.config import effpr_config_page
 from dateutil import parser
@@ -21,6 +22,7 @@ class EffpTask(Task):
     def __init__(self, number, name, site, family):
         super().__init__(number, name, site, family)
         self.is_continuous = True
+        self.supports_manual_run = True
         self.stream = None
         self.register_task_configuration(effpr_config_page)
 
@@ -53,7 +55,10 @@ class EffpTask(Task):
         new_section = section
         edit_summary = []
 
-        last_hit = api.get_last_abuse_filter_trigger(user_name)
+        matching_hits = api.get_last_filter_hits(user_name)
+
+        # get a single log entry for most operations
+        last_hit = None if len(matching_hits) == 0 else matching_hits[0]
 
         # If filter was triggered more than 3 hours ago, assume it is not the one being reported
         if last_hit is not None:
@@ -69,7 +74,6 @@ class EffpTask(Task):
                 new_section += ':{{EFFP|nofilterstriggered|bot=1}} ~~~~\n'
                 edit_summary.append('Notify that no filters were triggered (task 1a)')
         else:
-            last_hit_filter_id = last_hit['filter_id']
             last_hit_page_title = last_hit['title']
 
             # subtask a: if page title is missing, add it
@@ -113,8 +117,16 @@ class EffpTask(Task):
                     raise
 
             # subtask c: notify if filter is private
-            # last_hit_filter id seems to be empty when a filter is private
-            if last_hit_filter_id == '':
+            private = False
+            for hit in matching_hits:
+                # filter id seems to be empty when a filter is private
+                if hit['filter_id'] != '':
+                    pass
+                if hit['result'] != 'disallow' and hit['result'] != 'warn':
+                    pass
+                private = True
+
+            if private:
                 new_section += ':{{EFFP|p|bot=1}} ~~~~\n'
                 edit_summary.append('Add private filter notice (task 1c)')
 
@@ -271,6 +283,10 @@ class EffpTask(Task):
                 section_texts.append(section_text)
 
         if save and self.should_edit():
+            if not self.is_manual_run or confirm_edit():
+                print('Not saving!')
+                return
+
             if len(archived_sections) > 0:
                 print('Saving archived sections, len =', len(archived_sections))
                 self.add_to_archive_page(
@@ -320,6 +336,9 @@ class EffpTask(Task):
 
         print('Processing page once')
         self.process_page(self.get_task_configuration('reports_page'), api)
+
+        if self.is_manual_run:
+            return
 
         # if change streams are available for that page, use it; otherwise just process it once
         try:
