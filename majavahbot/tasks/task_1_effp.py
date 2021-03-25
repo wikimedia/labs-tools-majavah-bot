@@ -283,7 +283,7 @@ class EffpTask(Task):
                 section_texts.append(section_text)
 
         if save and self.should_edit():
-            if not self.is_manual_run or confirm_edit():
+            if self.is_manual_run and (not confirm_edit()):
                 print('Not saving!')
                 return
 
