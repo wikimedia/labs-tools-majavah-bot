@@ -1,8 +1,9 @@
-import time
-import dateparser
+import datetime
 import re
 import subprocess
-import datetime
+import time
+
+import dateparser
 
 multiline_reply_regex = re.compile('\n+([^\n]+~~~~)')
 

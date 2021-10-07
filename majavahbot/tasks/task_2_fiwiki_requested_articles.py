@@ -1,9 +1,10 @@
-from majavahbot.api import MediawikiApi, ReplicaDatabase, manual_run, get_mediawiki_api
-from majavahbot.config import requested_articles_config_page
-from majavahbot.tasks import Task, task_registry
-from pywikibot import Page
 from re import compile
 
+from pywikibot import Page
+
+from majavahbot.api import MediawikiApi, ReplicaDatabase, get_mediawiki_api, manual_run
+from majavahbot.config import requested_articles_config_page
+from majavahbot.tasks import Task, task_registry
 
 ENTRY_REGEX = compile(r'\n:*\*+ ?([^\n]+)')
 LOCAL_LINK_REGEX = compile(r'\[\[([^\:\]]+)\]\]')

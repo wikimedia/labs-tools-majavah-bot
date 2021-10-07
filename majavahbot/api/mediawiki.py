@@ -1,8 +1,9 @@
 import re
-import pywikibot
+
 import dateparser
-from pywikibot.data import api
+import pywikibot
 from pywikibot.comms.eventstreams import EventStreams, site_rc_listener
+from pywikibot.data import api
 
 SIGNATURE_TIME_REGEX = re.compile(r'\d\d:\d\d, \d{1,2} \w*? \d\d\d\d \(UTC\)')
 

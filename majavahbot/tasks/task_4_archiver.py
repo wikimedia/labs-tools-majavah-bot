@@ -2,7 +2,6 @@ from majavahbot.api import ReplicaDatabase
 from majavahbot.api.manual_run import confirm_edit
 from majavahbot.tasks import Task, task_registry
 
-
 QUERY = '''
 select
     page_id,

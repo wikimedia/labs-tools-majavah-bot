@@ -1,10 +1,12 @@
+import datetime
+from re import compile, search, sub
+
+from dateutil import parser
+
 from majavahbot.api import MediawikiApi
 from majavahbot.api.manual_run import confirm_edit
-from majavahbot.tasks import Task, task_registry
 from majavahbot.config import effpr_config_page
-from dateutil import parser
-from re import search, sub, compile
-import datetime
+from majavahbot.tasks import Task, task_registry
 
 
 class EffpTask(Task):

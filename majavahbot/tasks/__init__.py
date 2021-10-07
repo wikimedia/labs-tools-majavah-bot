@@ -1,1 +1,1 @@
-from majavahbot.tasks.task import TaskRegistry, Task, task_registry
+from majavahbot.tasks.task import Task, TaskRegistry, task_registry

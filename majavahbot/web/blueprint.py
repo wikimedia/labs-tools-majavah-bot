@@ -1,8 +1,9 @@
+from flask import Blueprint, render_template
+
+from majavahbot.api.consts import *
 from majavahbot.api.database import task_database
 from majavahbot.api.utils import get_revision
-from majavahbot.api.consts import *
 from majavahbot.tasks import task_registry
-from flask import Blueprint, render_template
 
 blueprint = Blueprint('majavah-bot', __name__)
 

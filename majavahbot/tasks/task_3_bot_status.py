@@ -1,10 +1,12 @@
-from pywikibot.data.api import QueryGenerator
-from majavahbot.tasks import Task, task_registry
-from majavahbot.api.consts import MEDIAWIKI_DATE_FORMAT, HUMAN_DATE_FORMAT
-from majavahbot.api.utils import create_delay
-from datetime import datetime
-import mwparserfromhell
 import sys
+from datetime import datetime
+
+import mwparserfromhell
+from pywikibot.data.api import QueryGenerator
+
+from majavahbot.api.consts import HUMAN_DATE_FORMAT, MEDIAWIKI_DATE_FORMAT
+from majavahbot.api.utils import create_delay
+from majavahbot.tasks import Task, task_registry
 
 # Groups in this array will not be shown as additional user rights
 STANDARD_GROUPS = ['bot', '*', 'user', 'autoconfirmed', 'extendedconfirmed']

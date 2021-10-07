@@ -1,10 +1,11 @@
-from majavahbot.api import task_database, get_mediawiki_api, MediawikiApi
-from importlib import import_module
-from datetime import datetime
-from typing import Optional
 import json
 import os
 import re
+from datetime import datetime
+from importlib import import_module
+from typing import Optional
+
+from majavahbot.api import MediawikiApi, get_mediawiki_api, task_database
 
 
 class Task:

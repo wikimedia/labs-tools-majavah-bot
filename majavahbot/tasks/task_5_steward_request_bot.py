@@ -1,11 +1,13 @@
+import ipaddress
+
+import mwparserfromhell
+from pywikibot.data.api import QueryGenerator
+
 from majavahbot.api.manual_run import confirm_edit
 from majavahbot.api.mediawiki import MediawikiApi
 from majavahbot.api.utils import remove_empty_lines_before_replies, was_enough_time_ago
 from majavahbot.config import steward_request_bot_config_page
 from majavahbot.tasks import Task, task_registry
-from pywikibot.data.api import QueryGenerator
-import mwparserfromhell
-import ipaddress
 
 
 class StewardRequestTask(Task):

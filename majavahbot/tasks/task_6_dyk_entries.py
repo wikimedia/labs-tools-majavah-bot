@@ -1,14 +1,15 @@
+import datetime
+import re
+import traceback
+from functools import lru_cache
+
+import mwparserfromhell
+from pywikibot import Page
+from pywikibot.exceptions import PageRelatedError
+
 from majavahbot.api.database import ReplicaDatabase
 from majavahbot.api.manual_run import confirm_edit
 from majavahbot.tasks import Task, task_registry
-from pywikibot import Page
-from pywikibot.exceptions import PageRelatedError
-from functools import lru_cache
-import mwparserfromhell
-import traceback
-import datetime
-import re
-
 
 MOVED_REGEX = re.compile(r'(?:[a-zA-Z0-9 .]+ )?moved (?:page )?\[\[([^]]+)]] to \[\[([^]]+)]]')
 

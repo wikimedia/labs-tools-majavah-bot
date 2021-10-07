@@ -1,14 +1,16 @@
+from datetime import datetime
+
 import mysql.connector
+
 from majavahbot.api.consts import JOB_STATUS_RUNNING
 from majavahbot.config import (
     analytics_db_hostname,
     analytics_db_option_file,
     analytics_db_port,
+    own_db_database,
     own_db_hostname,
     own_db_option_file,
-    own_db_database,
 )
-from datetime import datetime
 
 
 class BaseDatabase:
