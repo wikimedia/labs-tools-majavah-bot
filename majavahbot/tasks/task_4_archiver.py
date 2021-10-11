@@ -1,3 +1,5 @@
+import pywikibot
+
 from majavahbot.api import ReplicaDatabase
 from majavahbot.api.manual_run import confirm_edit
 from majavahbot.tasks import Task, task_registry
@@ -5,11 +7,12 @@ from majavahbot.tasks import Task, task_registry
 QUERY = '''
 select
     page_id,
-    concat("Talk:", page_title) as page_full_title,
+    page_namespace,
+    page_title,
     page_len
 from page
 where
-    page_namespace = 1
+    page_namespace in ({namespaces})
     and page_title not like '%/%'
     and page_len > 5000
     and not exists (
@@ -24,7 +27,7 @@ where
         from page_restrictions
         where pr_page = page_id
         and pr_type = 'edit'
-        and pr_level = 'sysop'    
+        and pr_level = 'sysop'
     )
 order by page_len desc
 limit 20;
@@ -46,6 +49,7 @@ class AchieverBot(Task):
             autosetup_run=False,
             autosetup_tag='{{subst:Përdoruesi:MajavahBot/arkivimi automatik}}',
             autosetup_summary='MajavahBot: Vendosja e faqes së diskutimit për arkivim automatik',
+            autosetup_namespaces=[1],
         )
 
         if self.get_task_configuration('autosetup_run') is not True:
@@ -60,13 +64,20 @@ class AchieverBot(Task):
             print('Replag is over 10 seconds, not processing! (' + str(replag) + ')')
             return
 
-        results = replicadb.get_all(QUERY)
+        namespaces = self.get_task_configuration('autosetup_namespaces')
+        namespace_placeholders = ','.join(['%s'] * len(namespaces))
+
+        results = replicadb.get_all(
+            QUERY.format(namespaces=namespace_placeholders), tuple(namespaces)
+        )
+
         print('-- Got %s pages' % (str(len(results))))
         for page_from_db in results:
             page_id = page_from_db[0]
-            page_name = page_from_db[1].decode('utf-8')
+            page_ns = page_from_db[1]
+            page_name = page_from_db[2].decode('utf-8')
 
-            page = api.get_page(page_name)
+            page = pywikibot.Page(api.get_site(), page_name, ns=page_ns)
             page_text = page.get()
             assert page.pageid == page_id
 
