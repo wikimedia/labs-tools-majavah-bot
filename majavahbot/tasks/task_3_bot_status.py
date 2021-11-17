@@ -106,10 +106,12 @@ class BotStatusData:
         )
 
     def format_block(self):
-        return "%s by {{no ping|%s}} on %s to expire at %s.<br/>Block reason is '%s{{'}}" % (
+        date = self.parse_date(self.block_data['at'])
+        return "data-sort-value=%s | %s by {{no ping|%s}} on %s to expire at %s.<br/>Block reason is '%s{{'}}" % (
+            date.strftime(MEDIAWIKI_DATE_FORMAT),
             'Partially blocked' if self.block_data['partial'] else 'Blocked',
             self.block_data['by'],
-            self.format_date(self.parse_date(self.block_data['at']), sortkey=False),
+            self.format_date(date, sortkey=False),
             self.block_data['expiry'],
             self.format_block_reason(),
         )
