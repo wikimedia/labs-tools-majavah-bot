@@ -38,10 +38,21 @@ class StewardRequestTask(Task):
             letitle='User:' + account_name + '@global',
         ).request.submit()['query']['logevents']
 
-        if len(data) == 0 or 'locked' not in data[0]['params']['0']:
+        if len(data) == 0:
             return None
 
-        if not was_enough_time_ago(data[0]['timestamp'], self.get_task_configuration('time_min')):
+        entry = data[0]
+        params = entry['params']
+
+        if 'added' in params:
+            if 'locked' not in params['added']:
+                return None
+        else:
+            # B/C for old log entries
+            if 'locked' not in params[0]:
+                return None
+
+        if not was_enough_time_ago(entry['timestamp'], self.get_task_configuration('time_min')):
             return None
 
         return data[0]['user']
