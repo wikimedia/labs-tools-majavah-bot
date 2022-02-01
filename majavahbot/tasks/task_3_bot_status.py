@@ -22,8 +22,8 @@ TABLE_HEADER = '''
 ! style="width: 10%;" | Last activity (UTC)
 ! style="width: 10%;" | Last edit (UTC)
 ! style="width: 10%;" | Last logged action (UTC)
-! style="width: 10%;" | Groups
-! style="width: 30%;" | Block
+! style="width: 10%;" | Last operator activity (UTC)
+! style="width: 30%;" | Extra details
 '''
 
 TABLE_ROW_FORMAT = '''
@@ -46,6 +46,7 @@ class BotStatusData:
         operators,
         last_edit_timestamp,
         last_log_timestamp,
+        last_operator_activity_timestamp,
         edit_count,
         groups,
         block_data,
@@ -56,6 +57,7 @@ class BotStatusData:
         self.last_edit_timestamp = None
         self.last_log_timestamp = None
         self.last_activity_timestamp = None
+        self.last_operator_activity_timestamp = None
 
         if last_edit_timestamp is not None:
             self.last_edit_timestamp = self.parse_date(last_edit_timestamp)
@@ -69,6 +71,9 @@ class BotStatusData:
                 self.last_activity_timestamp = max(
                     self.last_log_timestamp, self.last_edit_timestamp
                 )
+
+        if last_operator_activity_timestamp:
+            self.last_operator_activity_timestamp = last_operator_activity_timestamp
 
         self.edit_count = edit_count
         self.groups = list(filter(lambda x: x not in STANDARD_GROUPS, groups))
@@ -85,6 +90,9 @@ class BotStatusData:
         return datetime.strptime(string, MEDIAWIKI_DATE_FORMAT)
 
     def format_date(self, date, sortkey=True):
+        if date == 'infinite':
+            return 'infinite'
+
         if date is None:
             return '<center>—</center>'
 
@@ -112,9 +120,19 @@ class BotStatusData:
             'Partially blocked' if self.block_data['partial'] else 'Blocked',
             self.block_data['by'],
             self.format_date(date, sortkey=False),
-            self.block_data['expiry'],
+            self.format_date(self.block_data['expiry'], sortkey=False),
             self.format_block_reason(),
         )
+
+    def format_extra_details(self):
+        details = []
+
+        if len(self.groups) > 0:
+            details.append('Extra groups: ' + ', '.join(self.groups))
+        if self.block_data is not None:
+            details.append(self.format_block())
+
+        return '\n----\n'.join(details)
 
     def to_table_row(self):
         return TABLE_ROW_FORMAT % (
@@ -124,8 +142,8 @@ class BotStatusData:
             self.format_date(self.last_activity_timestamp),
             self.format_date(self.last_edit_timestamp),
             self.format_date(self.last_log_timestamp),
-            ', '.join(self.groups),
-            self.format_block() if self.block_data is not None else '',
+            self.format_date(self.last_operator_activity_timestamp),
+            self.format_extra_details(),
         )
 
     def format_operators(self):
@@ -154,6 +172,7 @@ class BotStatusTask(Task):
             uclimit=1,
             ucuser=username,
             ucdir='older',
+            ucprop='ids|timestamp',
             # for list=users
             usprop='blockinfo|groups|editcount',
             ususers=username,
@@ -161,6 +180,7 @@ class BotStatusTask(Task):
             lelimit=1,
             leuser=username,
             ledir='older',
+            leprop='ids|timestamp',
         ).request.submit()
         if 'query' in data:
             data = data['query']
@@ -194,15 +214,64 @@ class BotStatusTask(Task):
                                     continue
                                 operators.append(param_text)
 
+            operator_activity = None
+            for operator in operators:
+                if operator == 'MZMcBride':
+                    # I'm sure this won't cause any problems what so ever!
+                    # working around too slow sql queries getting timed out
+                    continue
+
+                print('- Loading data for operator %s' % operator)
+                operator_activity_data = QueryGenerator(
+                    site=self.get_mediawiki_api().get_site(),
+                    list='usercontribs|logevents',
+                    # for list=usercontribs
+                    uclimit=1,
+                    ucuser=operator,
+                    ucdir='older',
+                    ucprop='ids|timestamp',
+                    # for list=logevents
+                    lelimit=1,
+                    leuser=operator,
+                    ledir='older',
+                    leprop='ids|timestamp',
+                ).request.submit()
+
+                if 'query' in operator_activity_data:
+                    if len(operator_activity_data['query']['usercontribs']) > 0:
+                        last_edit = datetime.strptime(
+                            operator_activity_data['query']['usercontribs'][0]['timestamp'],
+                            MEDIAWIKI_DATE_FORMAT,
+                        )
+
+                        if operator_activity is None:
+                            operator_activity = last_edit
+                        else:
+                            operator_activity = max(operator_activity, last_edit)
+
+                    if len(operator_activity_data['query']['logevents']) > 0:
+                        last_log = datetime.strptime(
+                            operator_activity_data['query']['logevents'][0]['timestamp'],
+                            MEDIAWIKI_DATE_FORMAT,
+                        )
+
+                        if operator_activity is None:
+                            operator_activity = last_log
+                        else:
+                            operator_activity = max(operator_activity, last_log)
+
             return BotStatusData(
                 name=data['users'][0]['name'],
                 operators=operators,
-                last_edit_timestamp=None
-                if len(data['usercontribs']) == 0
-                else data['usercontribs'][0]['timestamp'],
-                last_log_timestamp=None
-                if len(data['logevents']) == 0
-                else data['logevents'][0]['timestamp'],
+                last_edit_timestamp=(
+                    None
+                    if len(data['usercontribs']) == 0
+                    else data['usercontribs'][0]['timestamp']
+                ),
+                last_log_timestamp=(
+                    None if len(data['logevents']) == 0 else data['logevents'][0]['timestamp']
+                ),
+                last_operator_activity_timestamp=operator_activity,
                 edit_count=data['users'][0]['editcount'],
                 groups=data['users'][0]['groups'],
                 block_data=block,
