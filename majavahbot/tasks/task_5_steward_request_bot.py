@@ -98,6 +98,7 @@ class StewardRequestTask(Task):
                     or template.name.matches('MultiLock')
                     or template.name.matches('Multilock')
                     or template.name.matches('Luxotool')
+                    or template.name.matches('MultiLockHide')
                 ):
                     for param in template.params:
                         if not param.can_hide_key(param.name):
