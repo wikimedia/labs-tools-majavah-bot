@@ -14,6 +14,7 @@ STANDARD_GROUPS = ['bot', '*', 'user', 'autoconfirmed', 'extendedconfirmed']
 PAGE_NAME = 'User:MajavahBot/Bot status report'
 
 TABLE_HEADER = '''
+{{botnav}}
 {| class="wikitable sortable" style="width:100%"
 |-
 ! style="width: 10%;" | Bot account
