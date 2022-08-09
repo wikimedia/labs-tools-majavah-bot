@@ -2,6 +2,7 @@ import datetime
 from re import compile, search, sub
 
 from dateutil import parser
+from pywikibot.exceptions import InvalidTitleError
 
 from majavahbot.api import MediawikiApi
 from majavahbot.api.manual_run import confirm_edit
@@ -142,7 +143,15 @@ class EffpTask(Task):
         new_section = section
         edit_summary = []
 
-        user = api.get_user(user_name)
+        try:
+            user = api.get_user(user_name)
+        except InvalidTitleError:
+            if '{{EFFP|' not in section and '<' not in user_name:
+                new_section += f':{{EFFP|note|bot=1}} Failed to retrieve details about user <code><nowiki>{{user_name}}</nowiki></code>! ~~~~\n'
+                edit_summary.append('Failed to load user details')
+                return new_section, edit_summary
+
+            return section, []
 
         # subtask d: notify if blocked
         if user.isBlocked():
