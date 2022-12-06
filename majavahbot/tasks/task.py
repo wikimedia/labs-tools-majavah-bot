@@ -15,7 +15,7 @@ class Task:
         self.site = site
         self.family = family
 
-        self.param = ''
+        self.param = ""
 
         self.is_continuous = False
         self.supports_manual_run = False
@@ -31,10 +31,10 @@ class Task:
         self.trial = task_database.get_trial(self.number)
 
     def __repr__(self):
-        return 'Task(number=' + str(self.number) + ',name=' + self.name + ')'
+        return "Task(number=" + str(self.number) + ",name=" + self.name + ")"
 
     def run(self):
-        raise Exception('Not implemented yet')
+        raise Exception("Not implemented yet")
 
     def do_manual_run(self):
         self.is_manual_run = True
@@ -42,22 +42,25 @@ class Task:
         if self.supports_manual_run:
             self.run()
             return
-        raise Exception('This task does not support manual runs')
+        raise Exception("This task does not support manual runs")
 
     def should_use_bot_flag(self):
         return self.approved
 
     def should_edit(self):
         if self.trial is not None:
-            if self.trial['max_edits'] and self.trial['edits_done'] >= self.trial['max_edits']:
+            if (
+                self.trial["max_edits"]
+                and self.trial["edits_done"] >= self.trial["max_edits"]
+            ):
                 self.trial = None
-                print('DEBUG: Trial was completed; max edit count reached')
+                print("DEBUG: Trial was completed; max edit count reached")
                 return False
-            if self.trial['max_days'] >= 0 and (
-                datetime.now() - self.trial['created_at']
-            ).total_seconds() > (self.trial['max_days'] * 86400):
+            if self.trial["max_days"] >= 0 and (
+                datetime.now() - self.trial["created_at"]
+            ).total_seconds() > (self.trial["max_days"] * 86400):
                 self.trial = None
-                print('DEBUG: Trial was completed; time ran out')
+                print("DEBUG: Trial was completed; time ran out")
                 return False
             return True
 
@@ -67,8 +70,8 @@ class Task:
         if self.trial is None:
             return
 
-        self.trial['edits_done'] += 1
-        task_database.record_trial_edit(self.trial['id'])
+        self.trial["edits_done"] += 1
+        task_database.record_trial_edit(self.trial["id"])
 
     def get_mediawiki_api(self) -> MediawikiApi:
         return get_mediawiki_api(self.site, self.family)
@@ -77,10 +80,10 @@ class Task:
         pass
 
     def _load_task_configuration(self, contents: str):
-        config_text = re.sub(r'[\n ]//.*', '', contents, flags=re.MULTILINE)
+        config_text = re.sub(r"[\n ]//.*", "", contents, flags=re.MULTILINE)
 
         if len(config_text) == 0:
-            config_text = '{}'
+            config_text = "{}"
 
         config = json.loads(config_text)
 
@@ -93,10 +96,11 @@ class Task:
     def register_task_configuration(self, config_page_name: str):
         self.task_configuration_page = config_page_name
 
-    def get_task_configuration(self, key: str = ''):
+    def get_task_configuration(self, key: str = ""):
         if (
             self.task_configuration_last_loaded is None
-            or (datetime.now() - self.task_configuration_last_loaded).total_seconds() > 60 * 15
+            or (datetime.now() - self.task_configuration_last_loaded).total_seconds()
+            > 60 * 15
         ):
             api = self.get_mediawiki_api()
             page = api.get_page(self.task_configuration_page)
@@ -138,16 +142,18 @@ class TaskRegistry:
         return None
 
     def get_tasks_for_wiki(self, family: str, lang: str):
-        tasks = filter(lambda task: (task.family == family and task.site == lang), self.tasks)
+        tasks = filter(
+            lambda task: (task.family == family and task.site == lang), self.tasks
+        )
         tasks = list(tasks)
         tasks.sort(key=(lambda task: task.number))
         return tasks
 
     def add_all_tasks(self):
         for module in os.listdir(os.path.dirname(__file__)):
-            if module == '__init__.py' or module == 'task.py' or module[-3:] != '.py':
+            if module == "__init__.py" or module == "task.py" or module[-3:] != ".py":
                 continue
-            name = 'majavahbot.tasks.' + module[:-3]
+            name = "majavahbot.tasks." + module[:-3]
             import_module(name)
 
 

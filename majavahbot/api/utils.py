@@ -5,25 +5,27 @@ import time
 
 import dateparser
 
-multiline_reply_regex = re.compile('\n+([^\n]+~~~~)')
+multiline_reply_regex = re.compile("\n+([^\n]+~~~~)")
 
 
 def remove_empty_lines_before_replies(text: str) -> str:
-    return multiline_reply_regex.sub('\n\\1', text)
+    return multiline_reply_regex.sub("\n\\1", text)
 
 
 def get_revision() -> str:
     try:
         output = (
-            subprocess.check_output(['git', 'describe', '--always'], stderr=subprocess.STDOUT)
+            subprocess.check_output(
+                ["git", "describe", "--always"], stderr=subprocess.STDOUT
+            )
             .strip()
             .decode()
         )
-        assert 'fatal' not in output
+        assert "fatal" not in output
         return output
     except Exception:
         # if somehow git version retrieving command failed, just return
-        return ''
+        return ""
 
 
 class Delay:

@@ -68,19 +68,19 @@ class BaseDatabase:
 
 class ReplicaDatabase(BaseDatabase):
     def __init__(self, db: str):
-        while db.endswith('_p'):
+        while db.endswith("_p"):
             db = db[:-2]
 
         self.db_name = db
         super().__init__(
-            host=analytics_db_hostname.replace('{DB}', db),
+            host=analytics_db_hostname.replace("{DB}", db),
             port=analytics_db_port,
             option_files=analytics_db_option_file,
-            database=db + '_p',
+            database=db + "_p",
         )
 
     def get_replag(self):
-        query = 'SELECT lag FROM heartbeat_p.heartbeat;'
+        query = "SELECT lag FROM heartbeat_p.heartbeat;"
         results = self.get_one(query)
         return results[0]
 
@@ -98,37 +98,40 @@ class TaskDatabase(BaseDatabase):
         self.request()
 
         self.run(
-            'create table if not exists tasks (id integer primary key not null, name varchar(255) not null,'
-            'approved tinyint(1) default 0 not null);'
+            "create table if not exists tasks (id integer primary key not null, name varchar(255) not null,"
+            "approved tinyint(1) default 0 not null);"
         )
         self.run(
-            'create table if not exists task_trials (id integer primary key auto_increment not null,'
-            'task_id integer not null, created_at timestamp default current_timestamp not null,'
-            'max_days integer default 0 not null, max_edits integer default 0 not null,'
-            'edits_done integer default 0 not null, closed tinyint(1) default 0 not null);'
+            "create table if not exists task_trials (id integer primary key auto_increment not null,"
+            "task_id integer not null, created_at timestamp default current_timestamp not null,"
+            "max_days integer default 0 not null, max_edits integer default 0 not null,"
+            "edits_done integer default 0 not null, closed tinyint(1) default 0 not null);"
         )
         self.run(
-            'create table if not exists jobs (id integer primary key auto_increment not null,'
-            'status varchar(16) not null, job_name varchar(64) not null,'
-            'task_id integer not null, task_wiki varchar(16) not null,'
-            'started_at timestamp not null default now(), ended_at timestamp default 0);'
+            "create table if not exists jobs (id integer primary key auto_increment not null,"
+            "status varchar(16) not null, job_name varchar(64) not null,"
+            "task_id integer not null, task_wiki varchar(16) not null,"
+            "started_at timestamp not null default now(), ended_at timestamp default 0);"
         )
 
         self.close()
 
     def insert_task(self, number, name):
         self.run(
-            'insert into tasks(id, name) values (%s, %s) on duplicate key update name = %s;',
+            "insert into tasks(id, name) values (%s, %s) on duplicate key update name = %s;",
             (number, name, name),
         )
 
     def is_approved(self, number):
-        results = self.get_one('select approved from tasks where id = %s limit 1;', (number,))
+        results = self.get_one(
+            "select approved from tasks where id = %s limit 1;", (number,)
+        )
         return bool(results[0])
 
     def get_trial(self, number):
         results = self.get_one(
-            'select * from task_trials where task_id = %s ' 'order by created_at desc limit 1',
+            "select * from task_trials where task_id = %s "
+            "order by created_at desc limit 1",
             (number,),
         )
 
@@ -136,32 +139,35 @@ class TaskDatabase(BaseDatabase):
             return None
 
         results = {
-            'id': results[0],
-            'task_id': results[1],
-            'created_at': results[2],
-            'max_days': results[3],
-            'max_edits': results[4],
-            'edits_done': results[5],
-            'closed': bool(results[6]),
+            "id": results[0],
+            "task_id": results[1],
+            "created_at": results[2],
+            "max_days": results[3],
+            "max_edits": results[4],
+            "edits_done": results[5],
+            "closed": bool(results[6]),
         }
 
-        if results['max_days'] >= 0 and (
-            datetime.now() - results['created_at']
-        ).total_seconds() > (results['max_days'] * 86400):
+        if results["max_days"] >= 0 and (
+            datetime.now() - results["created_at"]
+        ).total_seconds() > (results["max_days"] * 86400):
             return None
 
-        if results['max_edits'] and results['edits_done'] >= results['max_edits']:
+        if results["max_edits"] and results["edits_done"] >= results["max_edits"]:
             return None
 
         return results
 
     def record_trial_edit(self, trial_id: int):
-        self.run('update task_trials set edits_done = edits_done + 1 where id = %s;', (trial_id,))
+        self.run(
+            "update task_trials set edits_done = edits_done + 1 where id = %s;",
+            (trial_id,),
+        )
 
     def start_job(self, job_name: str, task_id: int, task_wiki: str):
         return self.run(
-            'insert into jobs (job_name, task_id, task_wiki, status, started_at)'
-            'values (%s, %s, %s, %s, CURRENT_TIMESTAMP())',
+            "insert into jobs (job_name, task_id, task_wiki, status, started_at)"
+            "values (%s, %s, %s, %s, CURRENT_TIMESTAMP())",
             (
                 job_name,
                 task_id,
@@ -173,7 +179,7 @@ class TaskDatabase(BaseDatabase):
 
     def stop_job(self, job_id: str, status: str):
         self.run(
-            'update jobs set ended_at=current_timestamp(), status = %s where id = %s',
+            "update jobs set ended_at=current_timestamp(), status = %s where id = %s",
             (
                 status,
                 job_id,

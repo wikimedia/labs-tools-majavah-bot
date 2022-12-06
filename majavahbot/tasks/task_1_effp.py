@@ -11,7 +11,7 @@ from majavahbot.tasks import Task, task_registry
 
 
 class EffpTask(Task):
-    '''
+    """
     Task 1 patrols the Edit Filter false positive report page.
 
     Subtasks are:
@@ -20,7 +20,7 @@ class EffpTask(Task):
      c) If filter is private, add a notification about that
      d) If user is blocked, add a notification about that
      e) Archive
-    '''
+    """
 
     def __init__(self, number, name, site, family):
         super().__init__(number, name, site, family)
@@ -30,30 +30,30 @@ class EffpTask(Task):
         self.register_task_configuration(effpr_config_page)
 
     def locate_page_name(self, section):
-        '''Used to locate page name from a section'''
-        results = search(self.get_task_configuration('page_title_regex'), section)
+        """Used to locate page name from a section"""
+        results = search(self.get_task_configuration("page_title_regex"), section)
 
         if results is None:
             return None
 
         page_name = results.group(1)
 
-        if page_name == 'Page not specified':
+        if page_name == "Page not specified":
             return None
         return page_name
 
     def is_closed(self, section):
         return any(
             string.lower() in section.lower()
-            for string in self.get_task_configuration('section_closed_strings')
+            for string in self.get_task_configuration("section_closed_strings")
         )
 
     def process_new_report(self, section: str, user_name: str, api: MediawikiApi):
-        '''Used to process a new section added to the page'''
+        """Used to process a new section added to the page"""
         page_title = self.locate_page_name(section)
 
-        if not section.endswith('\n'):
-            section += '\n'
+        if not section.endswith("\n"):
+            section += "\n"
 
         new_section = section
         edit_summary = []
@@ -65,7 +65,7 @@ class EffpTask(Task):
 
         # If filter was triggered more than 3 hours ago, assume it is not the one being reported
         if last_hit is not None:
-            last_hit_timestamp = last_hit['timestamp']
+            last_hit_timestamp = last_hit["timestamp"]
             last_hit_datetime = parser.parse(last_hit_timestamp)
             if (
                 datetime.datetime.now(tz=datetime.timezone.utc) - last_hit_datetime
@@ -74,10 +74,10 @@ class EffpTask(Task):
 
         if last_hit is None:
             if page_title is None:
-                new_section += ':{{EFFP|nofilterstriggered|bot=1}} ~~~~\n'
-                edit_summary.append('Notify that no filters were triggered (task 1a)')
+                new_section += ":{{EFFP|nofilterstriggered|bot=1}} ~~~~\n"
+                edit_summary.append("Notify that no filters were triggered (task 1a)")
         else:
-            last_hit_page_title = last_hit['title']
+            last_hit_page_title = last_hit["title"]
 
             # subtask a: if page title is missing, add it
             # subtask b: correct very obvious spelling mistakes in page titles (currently only case)
@@ -89,33 +89,35 @@ class EffpTask(Task):
                     if api.compare_page_titles(last_hit_page_title, page_title):
                         page_title_obviously_wrong = True
 
-                for pattern in self.get_task_configuration('page_title_wrong_formats'):
+                for pattern in self.get_task_configuration("page_title_wrong_formats"):
                     wrong_spelling = search(pattern, page_title)
                     if wrong_spelling is not None:
-                        if api.compare_page_titles(wrong_spelling.group(1), last_hit_page_title):
+                        if api.compare_page_titles(
+                            wrong_spelling.group(1), last_hit_page_title
+                        ):
                             page_title_obviously_wrong = True
 
             if page_title_missing or page_title_obviously_wrong:
                 last_hit_filter_log = self.get_task_configuration(
-                    'abuse_log_format'
+                    "abuse_log_format"
                 ) % api.get_page(last_hit_page_title).title(as_url=True)
 
                 new_section = sub(
-                    self.get_task_configuration('page_title_regex'),
-                    ';Page you were editing\n: [['
+                    self.get_task_configuration("page_title_regex"),
+                    ";Page you were editing\n: [["
                     + last_hit_page_title
                     + ']] (<span class="plainlinks">['
                     + last_hit_filter_log
-                    + ' filter log]</span>)\n',
+                    + " filter log]</span>)\n",
                     new_section,
                 )
 
                 if page_title_missing:
-                    new_section += ':{{EFFP|pagenameadded|bot=1}} ~~~~\n'
-                    edit_summary.append('Add affected page name (task 1a)')
+                    new_section += ":{{EFFP|pagenameadded|bot=1}} ~~~~\n"
+                    edit_summary.append("Add affected page name (task 1a)")
                 elif page_title_obviously_wrong:
-                    new_section += ':{{EFFP|pagenamefixed|bot=1}} ~~~~\n'
-                    edit_summary.append('Fix affected page name (task 1b)')
+                    new_section += ":{{EFFP|pagenamefixed|bot=1}} ~~~~\n"
+                    edit_summary.append("Fix affected page name (task 1b)")
                 else:
                     raise
 
@@ -123,22 +125,22 @@ class EffpTask(Task):
             private = 0
             for hit in matching_hits:
                 # filter id seems to be empty when a filter is private
-                if hit['filter_id'] == '' and hit['result'] in ('disallow', 'warn'):
-                    private = hit['id']
+                if hit["filter_id"] == "" and hit["result"] in ("disallow", "warn"):
+                    private = hit["id"]
                     break
 
             if private != 0:
-                new_section += ':{{EFFP|p|bot=1}}<!-- ' + str(private) + ' --> ~~~~\n'
-                edit_summary.append('Add private filter notice (task 1c)')
+                new_section += ":{{EFFP|p|bot=1}}<!-- " + str(private) + " --> ~~~~\n"
+                edit_summary.append("Add private filter notice (task 1c)")
 
         if new_section != section:
             return new_section, edit_summary
         return section, []
 
     def process_existing_report(self, section: str, user_name: str, api: MediawikiApi):
-        '''Used to process an existing section'''
-        if not section.endswith('\n'):
-            section += '\n'
+        """Used to process an existing section"""
+        if not section.endswith("\n"):
+            section += "\n"
 
         new_section = section
         edit_summary = []
@@ -146,30 +148,33 @@ class EffpTask(Task):
         try:
             user = api.get_user(user_name)
         except InvalidTitleError:
-            if '{{EFFP|' not in section and '<' not in user_name:
-                new_section += f':{{EFFP|note|bot=1}} Failed to retrieve details about user <code><nowiki>{{user_name}}</nowiki></code>! ~~~~\n'
-                edit_summary.append('Failed to load user details')
+            if "{{EFFP|" not in section and "<" not in user_name:
+                new_section += f":{{EFFP|note|bot=1}} Failed to retrieve details about user <code><nowiki>{{user_name}}</nowiki></code>! ~~~~\n"
+                edit_summary.append("Failed to load user details")
                 return new_section, edit_summary
 
             return section, []
 
         # subtask d: notify if blocked
         if user.isBlocked():
-            blocked_by = user.getprops()['blockedby']
-            new_section += ':{{EFFP|b|%s|%s|bot=1}} ~~~~\n' % (user.username, blocked_by)
-            edit_summary.append('Notify if user is blocked. (task 1d)')
+            blocked_by = user.getprops()["blockedby"]
+            new_section += ":{{EFFP|b|%s|%s|bot=1}} ~~~~\n" % (
+                user.username,
+                blocked_by,
+            )
+            edit_summary.append("Notify if user is blocked. (task 1d)")
 
         if new_section != section:
             return new_section, edit_summary
         return section, []
 
     def get_sections(self, page: str) -> tuple:
-        '''Parses a page and returns all sections in it'''
-        section_header_pattern = compile(self.get_task_configuration('section_header'))
+        """Parses a page and returns all sections in it"""
+        section_header_pattern = compile(self.get_task_configuration("section_header"))
         sections = []
 
         # add a \n to beginning, since the regex needs one
-        page = '\n' + page
+        page = "\n" + page
         matches = list(section_header_pattern.finditer(page))
 
         if len(matches) == 0:
@@ -178,15 +183,17 @@ class EffpTask(Task):
         for i in range(len(matches)):
             match = matches[i]
             end = matches[i + 1].start() - 1 if i < (len(matches) - 1) else len(page)
-            sections.append((match.group(1), page[match.start() : end] + '\n'))
+            sections.append((match.group(1), page[match.start() : end] + "\n"))
 
         header = page[: matches[0].start() - 1]
         # cut out the first line ending added when passing the page text to the regex
         header = header[1:]
 
-        return header + '\n', sections
+        return header + "\n", sections
 
-    def create_edit_summary(self, archived_sections: list, given_summaries: dict) -> str:
+    def create_edit_summary(
+        self, archived_sections: list, given_summaries: dict
+    ) -> str:
         processed_sections = list(given_summaries.keys())
         process_reasons = {}
 
@@ -202,50 +209,54 @@ class EffpTask(Task):
         if len(processed_sections) == 1:
             if len(process_reasons.keys()) <= 3:
                 summary.append(
-                    'Processed section '
+                    "Processed section "
                     + processed_sections[0]
-                    + ': '
-                    + (', '.join(process_reasons.keys()))
+                    + ": "
+                    + (", ".join(process_reasons.keys()))
                 )
             else:
-                summary.append('Processed section ' + processed_sections[0])
+                summary.append("Processed section " + processed_sections[0])
         elif len(processed_sections) > 1:
             if len(process_reasons.keys()) == 1:
                 reason = list(process_reasons.keys())[0]
                 summary.append(
-                    'Process ' + str(len(processed_sections)) + ' sections (' + reason + ')'
+                    "Process "
+                    + str(len(processed_sections))
+                    + " sections ("
+                    + reason
+                    + ")"
                 )
             else:
-                summary.append('Process ' + str(len(processed_sections)) + ' sections')
+                summary.append("Process " + str(len(processed_sections)) + " sections")
 
         if len(archived_sections) > 1:
-            summary.append('Archive ' + str(len(archived_sections)) + ' sections')
+            summary.append("Archive " + str(len(archived_sections)) + " sections")
         elif len(archived_sections) > 0:
-            summary.append('Archive section ' + archived_sections[0])
+            summary.append("Archive section " + archived_sections[0])
 
-        return 'Bot clerking: ' + ', '.join(summary)
+        return "Bot clerking: " + ", ".join(summary)
 
     def process_page(self, page: str, api: MediawikiApi):
         if not self.should_edit():
-            print('Should not edit; will not process page')
+            print("Should not edit; will not process page")
             return
 
-        print('Processing page %s' % page)
+        print("Processing page %s" % page)
 
-        '''Processes the EFFPR page'''
+        """Processes the EFFPR page"""
         page = api.get_page(page)
         page.get(force=True)
 
         rev_iterator = page.revisions(content=True, total=2)
-        current_text = next(rev_iterator)['text']
-        old_text = next(rev_iterator)['text']
+        current_text = next(rev_iterator)["text"]
+        old_text = next(rev_iterator)["text"]
 
         old_preface, old_sections = self.get_sections(old_text)
         current_preface, current_sections = self.get_sections(current_text)
 
         if len(old_sections) > len(current_sections):
             # assuming something was just archived or un-done, not doing anything
-            print('Assuming something was just archived or un-done, not doing anything')
+            print("Assuming something was just archived or un-done, not doing anything")
             return
 
         save = False
@@ -260,12 +271,14 @@ class EffpTask(Task):
             section_text = current_sections[i][1]
 
             if not self.is_closed(section_text):
-                print('Processing section by', section_user)
+                print("Processing section by", section_user)
 
                 new_text = section_text
                 new_summaries = []
                 if i >= len(old_sections):
-                    new_text, new_summaries = self.process_new_report(new_text, section_user, api)
+                    new_text, new_summaries = self.process_new_report(
+                        new_text, section_user, api
+                    )
                 new_text, existing_summaries = self.process_existing_report(
                     new_text, section_user, api
                 )
@@ -273,18 +286,18 @@ class EffpTask(Task):
                 if self.should_archive(new_text, api):
                     archived_sections.append(new_text)
                     archive_section_titles.append(section_user)
-                    print('Will archive open section', section_user)
+                    print("Will archive open section", section_user)
                     save = True
                 elif new_text != section_text:
                     section_texts.append(new_text)
-                    print('Modified open section', section_user)
+                    print("Modified open section", section_user)
                     summaries[section_user] = new_summaries + existing_summaries
                     save = True
                 else:
                     print("Didn't modify open section", section_user)
                     section_texts.append(new_text)
             elif self.should_archive(section_text, api):
-                print('Will archive closed section', section_user)
+                print("Will archive closed section", section_user)
                 archived_sections.append(section_text)
                 archive_section_titles.append(section_user)
                 save = True
@@ -293,40 +306,44 @@ class EffpTask(Task):
 
         if save and self.should_edit():
             if self.is_manual_run and (not confirm_edit()):
-                print('Not saving!')
+                print("Not saving!")
                 return
 
             if len(archived_sections) > 0:
-                print('Saving archived sections, len =', len(archived_sections))
+                print("Saving archived sections, len =", len(archived_sections))
                 self.add_to_archive_page(
-                    self.get_task_configuration('rolling_archive_page_name'),
-                    self.get_task_configuration('rolling_archive_max_sections'),
+                    self.get_task_configuration("rolling_archive_page_name"),
+                    self.get_task_configuration("rolling_archive_max_sections"),
                     archived_sections,
                     api,
                 )
 
-            write_page_name = self.get_task_configuration('page_to_write_reports')
-            if isinstance(write_page_name, str) and write_page_name != '':
-                print('Writing to page ', write_page_name, 'instead of reports page')
+            write_page_name = self.get_task_configuration("page_to_write_reports")
+            if isinstance(write_page_name, str) and write_page_name != "":
+                print("Writing to page ", write_page_name, "instead of reports page")
                 page = api.get_page(write_page_name)
 
             summary = self.create_edit_summary(archive_section_titles, summaries)
-            print('Saving, edit summary =', summary)
-            new_text = current_preface + ''.join(section_texts)
+            print("Saving, edit summary =", summary)
+            new_text = current_preface + "".join(section_texts)
             page.text = new_text
             page.save(summary, minor=False, botflag=self.should_use_bot_flag())
             self.record_trial_edit()
         else:
-            print('Not saving. save =', save)
+            print("Not saving. save =", save)
 
     def add_to_archive_page(
-        self, archive_page_name: str, max_threads: int, new_sections: list, api: MediawikiApi
+        self,
+        archive_page_name: str,
+        max_threads: int,
+        new_sections: list,
+        api: MediawikiApi,
     ):
         archive_page = api.get_page(archive_page_name)
         header, sections = self.get_sections(archive_page.text)
 
         for section in new_sections:
-            sections.append(('', section))
+            sections.append(("", section))
 
         if len(sections) > max_threads:
             sections = sections[0 - max_threads :]
@@ -335,46 +352,48 @@ class EffpTask(Task):
         for section in sections:
             section_texts.append(section[1])
 
-        summary = 'Add %s archived sections (task 1e)' % len(new_sections)
-        archive_page.text = header + ''.join(section_texts)
+        summary = "Add %s archived sections (task 1e)" % len(new_sections)
+        archive_page.text = header + "".join(section_texts)
         archive_page.save(summary, minor=False, botflag=self.should_use_bot_flag())
         self.record_trial_edit()
 
     def run(self):
         api = self.get_mediawiki_api()
 
-        print('Processing page once')
-        self.process_page(self.get_task_configuration('reports_page'), api)
+        print("Processing page once")
+        self.process_page(self.get_task_configuration("reports_page"), api)
 
         if self.is_manual_run:
             return
 
         # if change streams are available for that page, use it; otherwise just process it once
         try:
-            self.stream = api.get_page_change_stream(self.get_task_configuration('reports_page'))
+            self.stream = api.get_page_change_stream(
+                self.get_task_configuration("reports_page")
+            )
         except:
             print("Can't subscribe to EFFPR report page")
             return
 
-        print('Now listening for EFFPR edits')
+        print("Now listening for EFFPR edits")
         for change in self.stream:
             if (
-                '!nobot!' in change['comment']
-                or 'Reverted ' in change['comment']
-                or 'Reverting ' in change['comment']
-                or 'Undid revision ' in change['comment']
+                "!nobot!" in change["comment"]
+                or "Reverted " in change["comment"]
+                or "Reverting " in change["comment"]
+                or "Undid revision " in change["comment"]
             ):
                 continue
-            self.process_page(self.get_task_configuration('reports_page'), api)
-        print('EventStream dried')  # auto restart?
+            self.process_page(self.get_task_configuration("reports_page"), api)
+        print("EventStream dried")  # auto restart?
 
     def task_configuration_reloaded(self, old, new):
-        if 'reports_page' in old and old['reports_page'] != new['reports_page']:
+        if "reports_page" in old and old["reports_page"] != new["reports_page"]:
             self.stream = []  # dry stream
 
     def should_archive(self, text: str, api: MediawikiApi) -> bool:
         # if there is a signature in text, do not archive as it was modified in this round.
-        if '~~~~' in text:
+        if "~~~~" in text:
             return False
 
         last_reply = api.get_last_reply(text)
@@ -383,17 +402,17 @@ class EffpTask(Task):
         if last_reply is None:
             return False
 
-        no_resolution_time = self.get_task_configuration('no_resolution_archive_time')
+        no_resolution_time = self.get_task_configuration("no_resolution_archive_time")
         lowertext = text.lower()
 
-        keep_texts = self.get_task_configuration('archive_blockers')
+        keep_texts = self.get_task_configuration("archive_blockers")
         for value in keep_texts:
             if value.lower() in lowertext:
                 return False
 
         delay_found = False
         shortest_found_delay = 2419200  # 4 weeks, should be long enough
-        delays = self.get_task_configuration('archive_delays')
+        delays = self.get_task_configuration("archive_delays")
 
         for key, value in delays.items():
             if key.lower() in lowertext:
@@ -407,10 +426,14 @@ class EffpTask(Task):
             datetime.datetime.now(tz=datetime.timezone.utc) - last_reply
         ).total_seconds()
         print(
-            'Archive seconds_to_wait %s, last reply was %s, archive: %s'
-            % (str(seconds_to_wait), str(last_reply_seconds), last_reply_seconds > seconds_to_wait)
+            "Archive seconds_to_wait %s, last reply was %s, archive: %s"
+            % (
+                str(seconds_to_wait),
+                str(last_reply_seconds),
+                last_reply_seconds > seconds_to_wait,
+            )
         )
         return last_reply_seconds > seconds_to_wait
 
 
-task_registry.add_task(EffpTask(1, 'EFFP helper', 'en', 'wikipedia'))
+task_registry.add_task(EffpTask(1, "EFFP helper", "en", "wikipedia"))
