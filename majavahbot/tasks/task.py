@@ -1,11 +1,11 @@
 import json
 import os
-import re
 from datetime import datetime
 from importlib import import_module
 from typing import Optional
 
-from majavahbot.api import MediawikiApi, get_mediawiki_api, task_database
+from majavahbot.api import MediawikiApi, TaskDatabase, get_mediawiki_api
+from majavahbot.api.utils import remove_comments
 
 
 class Task:
@@ -26,9 +26,17 @@ class Task:
         self.task_configuration_page = None
         self.task_configuration_last_loaded = None
 
-        task_database.insert_task(self.number, self.name)
-        self.approved = task_database.is_approved(self.number)
-        self.trial = task_database.get_trial(self.number)
+        self.trial = None
+
+    @property
+    def approved(self):
+        db = TaskDatabase()
+        db.insert_task(self.number, self.name)
+        return db.is_approved(self.number)
+
+    def refresh_trial_data(self):
+        db = TaskDatabase()
+        self.trial = db.get_trial(self.number)
 
     def __repr__(self):
         return "Task(number=" + str(self.number) + ",name=" + self.name + ")"
@@ -71,7 +79,8 @@ class Task:
             return
 
         self.trial["edits_done"] += 1
-        task_database.record_trial_edit(self.trial["id"])
+        db = TaskDatabase()
+        db.record_trial_edit(self.trial["id"])
 
     def get_mediawiki_api(self) -> MediawikiApi:
         return get_mediawiki_api(self.site, self.family)
@@ -80,7 +89,7 @@ class Task:
         pass
 
     def _load_task_configuration(self, contents: str):
-        config_text = re.sub(r"[\n ]//.*", "", contents, flags=re.MULTILINE)
+        config_text = remove_comments(contents)
 
         if len(config_text) == 0:
             config_text = "{}"

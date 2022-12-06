@@ -122,7 +122,7 @@ class TaskDatabase(BaseDatabase):
             (number, name, name),
         )
 
-    def is_approved(self, number):
+    def is_approved(self, number) -> bool:
         results = self.get_one(
             "select approved from tasks where id = %s limit 1;", (number,)
         )
@@ -185,6 +185,3 @@ class TaskDatabase(BaseDatabase):
                 job_id,
             ),
         )
-
-
-task_database = TaskDatabase()

@@ -6,6 +6,11 @@ import time
 import dateparser
 
 multiline_reply_regex = re.compile("\n+([^\n]+~~~~)")
+comment_regex = re.compile(r"(^|\n) *//.*")
+
+
+def remove_comments(content: str) -> str:
+    return comment_regex.sub("", content)
 
 
 def remove_empty_lines_before_replies(text: str) -> str:

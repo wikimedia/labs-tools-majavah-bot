@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template
 
 from majavahbot.api.consts import *
-from majavahbot.api.database import task_database
+from majavahbot.api.database import TaskDatabase
 from majavahbot.api.utils import get_revision
 from majavahbot.tasks import task_registry
 
@@ -48,13 +48,14 @@ def inject_base_variables():
 
 @blueprint.route("/")
 def index():
-    task_database.request()
-    task_database.init()
+    db = TaskDatabase()
+    db.request()
+    db.init()
     task_registry.add_all_tasks()
-    jobs = task_database.get_all(
+    jobs = db.get_all(
         "select id, status, job_name, task_id, task_wiki, started_at, ended_at from jobs order by `started_at` desc limit 20;"
     )
-    tasks = task_database.get_all(
+    tasks = db.get_all(
         """
     select
     id, name, approved,
@@ -63,7 +64,7 @@ def index():
     order by `id`
     """
     )
-    task_database.close()
+    db.close()
 
     return render_template(
         "index.html",
@@ -76,14 +77,15 @@ def index():
 
 @blueprint.route("/jobs/wiki/<wiki>")
 def jobs_per_wiki(wiki):
-    task_database.request()
-    task_database.init()
+    db = TaskDatabase()
+    db.request()
+    db.init()
     task_registry.add_all_tasks()
-    jobs = task_database.get_all(
+    jobs = db.get_all(
         "select id, status, job_name, task_id, task_wiki, started_at, ended_at from jobs where task_wiki = %s order by `started_at` desc limit 20",
         (wiki,),
     )
-    task_database.close()
+    db.close()
 
     return render_template(
         "per_wiki.html",

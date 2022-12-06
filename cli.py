@@ -1,10 +1,11 @@
 import argparse
 from sys import exit
 
-from majavahbot.api import ReplicaDatabase, get_mediawiki_api, task_database
+from majavahbot.api import ReplicaDatabase, TaskDatabase, get_mediawiki_api
 from majavahbot.api.consts import JOB_STATUS_DONE, JOB_STATUS_FAIL
 from majavahbot.tasks import task_registry
 
+task_database = TaskDatabase()
 task_database.request()
 task_database.init()
 task_registry.add_all_tasks()
