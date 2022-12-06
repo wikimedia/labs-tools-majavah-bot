@@ -183,7 +183,7 @@ class EffpTask(Task):
         for i in range(len(matches)):
             match = matches[i]
             end = matches[i + 1].start() - 1 if i < (len(matches) - 1) else len(page)
-            sections.append((match.group(1), page[match.start() : end] + "\n"))
+            sections.append((match.group(1).strip(), page[match.start() : end] + "\n"))
 
         header = page[: matches[0].start() - 1]
         # cut out the first line ending added when passing the page text to the regex
