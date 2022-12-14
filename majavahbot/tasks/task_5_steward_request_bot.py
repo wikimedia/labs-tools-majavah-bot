@@ -1,7 +1,10 @@
+import collections
 import ipaddress
 from datetime import datetime, timezone
+from typing import Dict, List
 
 import mwparserfromhell
+from mwparserfromhell.wikicode import Wikicode
 from pywikibot.data.api import QueryGenerator
 
 from majavahbot.api.manual_run import confirm_edit
@@ -9,6 +12,44 @@ from majavahbot.api.mediawiki import MediawikiApi
 from majavahbot.api.utils import remove_empty_lines_before_replies, was_enough_time_ago
 from majavahbot.config import steward_request_bot_config_page
 from majavahbot.tasks import Task, task_registry
+
+OPEN_STATUSES = ("", "onhold", "in progress", "inprogress")
+
+
+def add_archived_sections(
+    original_page: str, add_sections: Dict[str, List[str]]
+) -> str:
+    parsed = mwparserfromhell.parse(original_page)
+    top_level_sections = parsed.get_sections(levels=[2])
+
+    for tls in top_level_sections:
+        tls_header = tls.filter_headings()[0]
+        if not tls_header:
+            continue
+        tls_header_text = tls_header.title.strip()
+        if tls_header_text in add_sections:
+            tls.append("\n".join(add_sections[tls_header_text]) + "\n")
+            del add_sections[tls_header_text]
+
+    for title, data in add_sections.items():
+        data = "\n".join(data)
+        parsed.append(f"\n== {title} ==\n{data}\n")
+
+    return str(parsed)
+
+
+def is_closed(section: Wikicode):
+    status = [
+        template
+        for template in section.filter_templates()
+        if template.name.matches("status")
+    ]
+    if not status:
+        return False
+
+    status = status[0]
+
+    return status.has(1) and status.get(1).value.lower() not in OPEN_STATUSES
 
 
 class StewardRequestTask(Task):
@@ -112,7 +153,7 @@ class StewardRequestTask(Task):
         if not status:
             return False
         if status.has(1):
-            return len(status.get(1).value) > 0 and status.get(1).value != "onhold"
+            return status.get(1).value.lower() not in OPEN_STATUSES
 
         if ("unlock" in header and "/unlock" not in header) or (
             "unblock" in header and "/unblock" not in header
@@ -152,47 +193,45 @@ class StewardRequestTask(Task):
 
         return False
 
-    def run(self):
-        self.merge_task_configuration(
-            run=True,
-            srg_page="Steward requests/Global",
-            summary="Bot clerking",
-            mark_done_min_time=5 * 60,
-            archive_page_format="Steward requests/Global/{year}-w{week}",
-            archive_min_time=60 * 60,
-        )
-
-        if self.get_task_configuration("run") is not True:
-            print("Disabled in configuration")
-            return
-
-        api = self.get_mediawiki_api()
-
-        request_page = api.get_page(self.get_task_configuration("srg_page"))
+    def process_page(
+        self, api: MediawikiApi, page: str, archive_format: str, is_srg: bool
+    ):
+        request_page = api.get_page(page)
         request_original_text = request_page.get(force=True)
 
         parsed = mwparserfromhell.parse(request_page.get(force=True))
-        sections = parsed.get_sections(levels=[3])
+        top_level_sections = parsed.get_sections(levels=[2])
 
-        to_archive = ""
+        to_archive = collections.defaultdict(list)
 
-        for section in sections:
-            is_complete = self.process_srp_section(api, section)
+        for tls in top_level_sections:
+            sections = tls.get_sections(levels=[3])
 
-            if not is_complete:
-                continue
+            tls_header = tls.filter_headings()[0]
+            if not tls_header:
+                return False
+            tls_header_text = tls_header.title.strip()
 
-            last_reply = api.get_last_reply(str(section))
-            if last_reply is None:
-                continue
-            if (
-                datetime.now(tz=timezone.utc) - last_reply
-            ).total_seconds() <= self.get_task_configuration("archive_min_time"):
-                continue
+            for section in sections:
+                if is_srg:
+                    is_complete = self.process_srp_section(api, section)
+                else:
+                    is_complete = is_closed(section)
 
-            print(f"Archiving section {section}")
-            to_archive += "\n" + str(section)
-            parsed.replace(section, "")
+                if not is_complete:
+                    continue
+
+                last_reply = api.get_last_reply(str(section))
+                if last_reply is None:
+                    continue
+                if (
+                    datetime.now(tz=timezone.utc) - last_reply
+                ).total_seconds() <= self.get_task_configuration("archive_min_time"):
+                    continue
+
+                print(f"Archiving section {section}")
+                to_archive[tls_header_text].append(str(section).strip())
+                parsed.replace(section, "")
 
         new_text = str(parsed)
         new_text = remove_empty_lines_before_replies(new_text)
@@ -203,6 +242,31 @@ class StewardRequestTask(Task):
             and (not self.is_manual_run or confirm_edit())
         ):
             api.site.login()
+
+            if len(to_archive.keys()) > 0:
+                now = datetime.now()
+                archive_page_name = archive_format.format(
+                    page=page,
+                    year=now.year,
+                    month=now.month,
+                    week=now.isocalendar().week,
+                )
+
+                archive_page = api.get_page(archive_page_name)
+                if archive_page.exists():
+                    archive_page_original_text = archive_page.get(force=True)
+                else:
+                    archive_page_original_text = ""
+
+                archive_page.text = add_archived_sections(
+                    archive_page_original_text, to_archive
+                )
+
+                archive_page.save(
+                    self.get_task_configuration("summary"),
+                    botflag=self.should_use_bot_flag(),
+                )
+
             request_page.text = new_text
             request_page.save(
                 self.get_task_configuration("summary"),
@@ -210,25 +274,37 @@ class StewardRequestTask(Task):
             )
             self.record_trial_edit()
 
-            if to_archive != "":
-                now = datetime.now()
-                archive_page_name = self.get_task_configuration(
-                    "archive_page_format"
-                ).format(
-                    year=now.year,
-                    week=now.isocalendar().week,
-                )
+    def run(self):
+        self.merge_task_configuration(
+            run=True,
+            srg_page="Steward requests/Global",
+            srg_archive_page_format="{page}/{year}-w{week}",
+            archive_pages=[
+                {
+                    "page": "Steward requests/Miscellaneous",
+                    "archive_format": "{page}/{year}-{month}",
+                }
+            ],
+            summary="Bot clerking",
+            mark_done_min_time=5 * 60,
+            archive_min_time=8 * 60 * 60,
+        )
 
-                archive_page = api.get_page(archive_page_name)
-                if archive_page.exists():
-                    archive_page.text = archive_page.get(force=True) + "\n" + to_archive
-                else:
-                    archive_page.text = to_archive
+        if self.get_task_configuration("run") is not True:
+            print("Disabled in configuration")
+            return
 
-                archive_page.save(
-                    self.get_task_configuration("summary"),
-                    botflag=self.should_use_bot_flag(),
-                )
+        api = self.get_mediawiki_api()
+
+        # self.process_page(
+        #     api,
+        #     self.get_task_configuration("srg_page"),
+        #     self.get_task_configuration("srg_archive_page_format"),
+        #     True,
+        # )
+
+        for page in self.get_task_configuration("archive_pages"):
+            self.process_page(api, page["page"], page["archive_format"], False)
 
 
 task_registry.add_task(StewardRequestTask(5, "Steward request bot", "meta", "meta"))
