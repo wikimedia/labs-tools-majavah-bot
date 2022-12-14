@@ -160,7 +160,12 @@ class TaskRegistry:
 
     def add_all_tasks(self):
         for module in os.listdir(os.path.dirname(__file__)):
-            if module == "__init__.py" or module == "task.py" or module[-3:] != ".py":
+            if (
+                module == "__init__.py"
+                or module == "task.py"
+                or module[-3:] != ".py"
+                or module.endswith("_test.py")
+            ):
                 continue
             name = "majavahbot.tasks." + module[:-3]
             import_module(name)
