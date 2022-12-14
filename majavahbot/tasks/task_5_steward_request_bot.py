@@ -281,9 +281,30 @@ class StewardRequestTask(Task):
             srg_archive_page_format="{page}/{year}-w{week}",
             archive_pages=[
                 {
+                    "page": "Steward requests/Bot status",
+                    "archive_format": "{page}/{year}-{month}",
+                },
+                {
+                    "page": "Steward requests/Checkuser",
+                    "archive_format": "{page}/{year}-{month}",
+                },
+                {
+                    "page": "Steward requests/Global permissions",
+                    "archive_format": "{page}/{year}-{month}",
+                },
+                {
                     "page": "Steward requests/Miscellaneous",
                     "archive_format": "{page}/{year}-{month}",
-                }
+                },
+                # TODO: different header levels
+                # {
+                #     "page": "Steward requests/Permissions",
+                #     "archive_format": "{page}/{year}-{month}",
+                # },
+                {
+                    "page": "Steward requests/Username changes",
+                    "archive_format": "{page}/{year}-{month}",
+                },
             ],
             summary="Bot clerking",
             mark_done_min_time=5 * 60,
@@ -296,12 +317,12 @@ class StewardRequestTask(Task):
 
         api = self.get_mediawiki_api()
 
-        # self.process_page(
-        #     api,
-        #     self.get_task_configuration("srg_page"),
-        #     self.get_task_configuration("srg_archive_page_format"),
-        #     True,
-        # )
+        self.process_page(
+            api,
+            self.get_task_configuration("srg_page"),
+            self.get_task_configuration("srg_archive_page_format"),
+            True,
+        )
 
         for page in self.get_task_configuration("archive_pages"):
             self.process_page(api, page["page"], page["archive_format"], False)
