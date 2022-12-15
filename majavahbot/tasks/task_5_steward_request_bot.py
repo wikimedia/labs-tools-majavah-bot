@@ -28,7 +28,7 @@ def add_archived_sections(
             continue
         tls_header_text = tls_header.title.strip()
         if tls_header_text in add_sections:
-            tls.append("\n".join(add_sections[tls_header_text]) + "\n")
+            tls.append("\n" + "\n".join(add_sections[tls_header_text]) + "\n")
             del add_sections[tls_header_text]
 
     for title, data in add_sections.items():
