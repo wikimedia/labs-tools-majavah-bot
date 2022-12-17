@@ -39,6 +39,8 @@ TABLE_ROW_FORMAT = """
 | %s
 """
 
+EMPTY_COLUMN = "{{center|—}}"
+
 
 class BotStatusData:
     def __init__(
@@ -95,7 +97,7 @@ class BotStatusData:
             return "infinite"
 
         if date is None:
-            return "<center>—</center>"
+            return EMPTY_COLUMN
 
         if sortkey:
             return 'class="nowrap" data-sort-value={} | {}'.format(
@@ -152,7 +154,7 @@ class BotStatusData:
 
     def format_operators(self):
         if len(self.operators) == 0:
-            return "<center>—</center>"
+            return EMPTY_COLUMN
         return "{{no ping|" + "}}, {{no ping|".join(self.operators) + "}}"
 
 
