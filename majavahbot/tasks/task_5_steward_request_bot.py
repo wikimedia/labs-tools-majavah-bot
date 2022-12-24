@@ -1,6 +1,7 @@
 import collections
 import ipaddress
 from datetime import datetime, timezone
+from tokenize import Comment
 from typing import Dict, List
 
 import mwparserfromhell
@@ -13,7 +14,7 @@ from majavahbot.api.utils import remove_empty_lines_before_replies, was_enough_t
 from majavahbot.config import steward_request_bot_config_page
 from majavahbot.tasks import Task, task_registry
 
-OPEN_STATUSES = ("", "onhold", "in progress", "inprogress")
+OPEN_STATUSES = ("", "onhold", "on hold", "in progress", "inprogress")
 
 
 def add_archived_sections(
@@ -38,18 +39,32 @@ def add_archived_sections(
     return str(parsed)
 
 
-def is_closed(section: Wikicode):
-    status = [
+def is_closed(section: Wikicode, custom_templates: List[str]):
+    template = [
         template
         for template in section.filter_templates()
-        if template.name.matches("status")
+        if (
+            str(template.name).lower() in custom_templates
+            if custom_templates
+            else template.name.matches("status")
+        )
     ]
-    if not status:
+
+    if not template:
         return False
 
-    status = status[0]
+    template = template[0]
+    param = "status" if custom_templates else 1
 
-    return status.has(1) and status.get(1).value.lower() not in OPEN_STATUSES
+    if not template.has(param):
+        return False
+
+    return (
+        "".join([str(t) for t in template.get(param).value.filter_text()])
+        .lower()
+        .strip()
+        not in OPEN_STATUSES
+    )
 
 
 class StewardRequestTask(Task):
@@ -194,7 +209,13 @@ class StewardRequestTask(Task):
         return False
 
     def process_page(
-        self, api: MediawikiApi, page: str, archive_format: str, is_srg: bool
+        self,
+        *,
+        api: MediawikiApi,
+        page: str,
+        archive_format: str,
+        is_srg: bool,
+        custom_templates: List[str],
     ):
         request_page = api.get_page(page)
         request_original_text = request_page.get(force=True)
@@ -216,7 +237,7 @@ class StewardRequestTask(Task):
                 if is_srg:
                     is_complete = self.process_srp_section(api, section)
                 else:
-                    is_complete = is_closed(section)
+                    is_complete = is_closed(section, custom_templates)
 
                 if not is_complete:
                     continue
@@ -283,14 +304,17 @@ class StewardRequestTask(Task):
                 {
                     "page": "Steward requests/Bot status",
                     "archive_format": "{page}/{year}-{month}",
+                    "custom_templates": ["sr-request"],
                 },
                 {
                     "page": "Steward requests/Checkuser",
                     "archive_format": "{page}/{year}-{month}",
+                    "custom_templates": ["cu request"],
                 },
                 {
                     "page": "Steward requests/Global permissions",
                     "archive_format": "{page}/{year}-{month}",
+                    "custom_templates": ["sr-request"],
                 },
                 {
                     "page": "Steward requests/Miscellaneous",
@@ -304,6 +328,7 @@ class StewardRequestTask(Task):
                 {
                     "page": "Steward requests/Username changes",
                     "archive_format": "{page}/{year}-{month}",
+                    "custom_templates": ["sruc"],
                 },
             ],
             summary="Bot clerking",
@@ -318,14 +343,21 @@ class StewardRequestTask(Task):
         api = self.get_mediawiki_api()
 
         self.process_page(
-            api,
-            self.get_task_configuration("srg_page"),
-            self.get_task_configuration("srg_archive_page_format"),
-            True,
+            api=api,
+            page=self.get_task_configuration("srg_page"),
+            archive_format=self.get_task_configuration("srg_archive_page_format"),
+            is_srg=True,
+            custom_templates=[],
         )
 
         for page in self.get_task_configuration("archive_pages"):
-            self.process_page(api, page["page"], page["archive_format"], False)
+            self.process_page(
+                api=api,
+                page=page["page"],
+                archive_format=page["archive_format"],
+                is_srg=False,
+                custom_templates=page.get("custom_templates"),
+            )
 
 
 task_registry.add_task(StewardRequestTask(5, "Steward request bot", "meta", "meta"))

@@ -61,16 +61,25 @@ example
 
 
 @pytest.mark.parametrize(
-    "text, closed",
+    "text, custom_templates, closed",
     [
-        ["nope", False],
-        ["{{not status}}", False],
-        ["{{status}}", False],
-        ["{{status|}}", False],
-        ["{{status|onhold}}", False],
-        ["{{status|ONHOLD}}", False],
-        ["{{status|closed}}", True],
+        ["nope", [], False],
+        ["{{not status}}", [], False],
+        ["{{status}}", [], False],
+        ["{{status|}}", [], False],
+        ["{{status|onhold}}", [], False],
+        ["{{status|ONHOLD}}", [], False],
+        ["{{status|closed}}", [], True],
+        ["{{srgp|status=done}}", [], False],
+        ["{{srgp|status=done}}", ["foo"], False],
+        ["{{srgp}}", ["srgp"], False],
+        ["{{srgp|status=in progress}}", ["srgp"], False],
+        ["{{srgp|status=}}", ["srgp"], False],
+        ["{{srgp|status=on hold<!--don't change this line-->}}", ["srgp"], False],
+        ["{{srgp|status=done}}", ["srgp"], True],
+        ["{{SRGP|status=done}}", ["srgp"], True],
+        ["{{status|closed}}", ["srgp"], False],
     ],
 )
-def test_is_closed(text, closed):
-    assert is_closed(mwparserfromhell.parse(text)) == closed
+def test_is_closed(text, custom_templates, closed):
+    assert is_closed(mwparserfromhell.parse(text), custom_templates) == closed
