@@ -2,95 +2,96 @@ from majavahbot.api import ReplicaDatabase
 from majavahbot.tasks import Task, task_registry
 
 QUERY = """/* MajavahBot task 7 */
-select 
-  concat ("{{u|", user_name, "}}") as "username", 
+select
+  concat ("{{u|", user_name, "}}") as "username",
   (
-    select 
-      count(*) 
-    from 
-      logging 
-      inner join actor on actor_id = log_actor 
-    where 
-      actor_user = user_id 
+    select
+      count(*)
+    from
+      logging
+      inner join actor on actor_id = log_actor
+    where
+      actor_user = user_id
       and log_type = "gblblock"
-  ) as "+Global block", 
+  ) as "+Global block",
   (
-    select 
-      count(*) 
-    from 
-      logging 
-      inner join actor on actor_id = log_actor 
-    where 
-      actor_user = user_id 
+    select
+      count(*)
+    from
+      logging
+      inner join actor on actor_id = log_actor
+    where
+      actor_user = user_id
       and log_type = "globalauth"
-  ) as "+Global lock", 
+  ) as "+Global lock",
   (
-    select 
-      count(*) 
-    from 
-      logging 
-      inner join actor on actor_id = log_actor 
-    where 
-      actor_user = user_id 
+    select
+      count(*)
+    from
+      logging
+      inner join actor on actor_id = log_actor
+    where
+      actor_user = user_id
       and log_type = "gblrename"
-  ) as "+Global rename", 
+  ) as "+Global rename",
   (
-    select 
-      count(*) 
-    from 
-      logging 
-      inner join actor on actor_id = log_actor 
-    where 
-      actor_user = user_id 
+    select
+      count(*)
+    from
+      logging
+      inner join actor on actor_id = log_actor
+    where
+      actor_user = user_id
       and log_type = "gblrights"
-  ) as "+Global rights", 
+  ) as "+Global rights",
   (
-    select 
-      count(*) 
-    from 
-      logging 
-      inner join actor on actor_id = log_actor 
-    where 
-      actor_user = user_id 
+    select
+      count(*)
+    from
+      logging
+      inner join actor on actor_id = log_actor
+    where
+      actor_user = user_id
       and log_type = "rights"
-  ) as "+Rights", 
+  ) as "+Rights",
   (
-    select 
-      count(*) 
-    from 
-      logging 
-      inner join actor on actor_id = log_actor 
-    where 
-      actor_user = user_id 
+    select
+      count(*)
+    from
+      logging
+      inner join actor on actor_id = log_actor
+    where
+      actor_user = user_id
       and log_type = "abusefilter"
-  ) as "+Af edits", 
+  ) as "+Af edits",
   (
     (
-      select 
-        count(*) 
-      from 
-        revision 
-        inner join actor on actor_id = rev_actor 
-      where 
-        actor_user = user_id 
+      select
+        count(*)
+      from
+        revision
+        inner join actor on actor_id = rev_actor
+      where
+        actor_user = user_id
       and rev_page IN (32244, 130130, 164533, 135805, 31937, 84820, 9476, 117752, 167407)
     ) + (
-      select 
-        count(*) 
-      from 
-        revision 
-        inner join actor on actor_id = rev_actor 
-      where 
-        actor_user = user_id 
-        and rev_page = 13356 
+      select
+        count(*)
+      from
+        revision
+        inner join actor on actor_id = rev_actor
+      where
+        actor_user = user_id
+        and rev_page = 13356
         and rev_minor_edit = 0
     )
   ) as "SR edits"
-from 
-  user 
-  inner join user_groups on ug_user = user_id 
-where 
-  ug_group = "steward";
+from
+  user
+  inner join user_groups on ug_user = user_id
+where
+  ug_group = "steward"
+order by user_name;
 """
 
 PAGE_TEMPLATE = """
