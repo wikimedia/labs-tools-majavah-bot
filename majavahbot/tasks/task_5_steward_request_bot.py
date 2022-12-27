@@ -40,20 +40,20 @@ def add_archived_sections(
 
 
 def is_closed(section: Wikicode, custom_templates: List[str]):
-    template = [
+    templates = [
         template
         for template in section.filter_templates()
         if (
-            str(template.name).lower() in custom_templates
+            any([template.name.matches(name) for name in custom_templates])
             if custom_templates
             else template.name.matches("status")
         )
     ]
 
-    if not template:
+    if not templates:
         return False
 
-    template = template[0]
+    template = templates[0]
     param = "status" if custom_templates else 1
 
     if not template.has(param):
@@ -217,6 +217,7 @@ class StewardRequestTask(Task):
         is_srg: bool,
         custom_templates: List[str],
     ):
+        print(f"processing page {page}")
         request_page = api.get_page(page)
         request_original_text = request_page.get(force=True)
 
@@ -309,7 +310,7 @@ class StewardRequestTask(Task):
                 {
                     "page": "Steward requests/Checkuser",
                     "archive_format": "{page}/{year}-{month}",
-                    "custom_templates": ["cu request"],
+                    "custom_templates": ["CU request"],
                 },
                 {
                     "page": "Steward requests/Global permissions",
@@ -328,7 +329,7 @@ class StewardRequestTask(Task):
                 {
                     "page": "Steward requests/Username changes",
                     "archive_format": "{page}/{year}-{month}",
-                    "custom_templates": ["sruc"],
+                    "custom_templates": ["SRUC"],
                 },
             ],
             summary="Bot clerking",
