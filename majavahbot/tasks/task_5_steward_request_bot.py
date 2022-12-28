@@ -14,7 +14,7 @@ from majavahbot.api.utils import remove_empty_lines_before_replies, was_enough_t
 from majavahbot.config import steward_request_bot_config_page
 from majavahbot.tasks import Task, task_registry
 
-OPEN_STATUSES = ("", "onhold", "on hold", "in progress", "inprogress")
+OPEN_STATUSES = ("", "hold", "onhold", "on hold", "in progress", "inprogress")
 
 
 def add_archived_sections(
