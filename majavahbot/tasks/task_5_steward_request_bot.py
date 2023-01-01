@@ -214,6 +214,7 @@ class StewardRequestTask(Task):
         api: MediawikiApi,
         page: str,
         archive_format: str,
+        archive_header: str,
         is_srg: bool,
         custom_templates: List[str],
     ):
@@ -278,7 +279,7 @@ class StewardRequestTask(Task):
                 if archive_page.exists():
                     archive_page_original_text = archive_page.get(force=True)
                 else:
-                    archive_page_original_text = ""
+                    archive_page_original_text = archive_header
 
                 archive_page.text = add_archived_sections(
                     archive_page_original_text, to_archive
@@ -356,6 +357,9 @@ class StewardRequestTask(Task):
                 api=api,
                 page=page["page"],
                 archive_format=page["archive_format"],
+                archive_header=page.get(
+                    "archive_header", "{{Steward request archive header}}\n"
+                ),
                 is_srg=False,
                 custom_templates=page.get("custom_templates"),
             )
