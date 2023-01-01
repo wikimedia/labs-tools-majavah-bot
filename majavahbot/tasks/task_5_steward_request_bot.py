@@ -348,6 +348,7 @@ class StewardRequestTask(Task):
             api=api,
             page=self.get_task_configuration("srg_page"),
             archive_format=self.get_task_configuration("srg_archive_page_format"),
+            archive_header="{{Steward request archive header}}\n",
             is_srg=True,
             custom_templates=[],
         )
