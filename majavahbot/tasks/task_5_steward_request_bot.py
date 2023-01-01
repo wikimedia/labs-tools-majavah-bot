@@ -270,8 +270,8 @@ class StewardRequestTask(Task):
                 archive_page_name = archive_format.format(
                     page=page,
                     year=now.year,
-                    month=now.month,
-                    week=now.isocalendar().week,
+                    month=str(now.month).zfill(2),
+                    week=str(now.isocalendar().week).zfill(2),
                 )
 
                 archive_page = api.get_page(archive_page_name)
