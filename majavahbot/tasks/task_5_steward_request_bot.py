@@ -167,7 +167,7 @@ class StewardRequestTask(Task):
 
         if not status:
             return False
-        if status.has(1):
+        if status.has(1) and status.get(1).value != "":
             return status.get(1).value.lower() not in OPEN_STATUSES
 
         if ("unlock" in header and "/unlock" not in header) or (
