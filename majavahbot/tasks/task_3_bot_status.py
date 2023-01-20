@@ -1,5 +1,6 @@
 import sys
 from datetime import datetime
+from typing import List, Optional
 
 import mwparserfromhell
 from pywikibot.data.api import QueryGenerator
@@ -45,14 +46,15 @@ EMPTY_COLUMN = "{{center|—}}"
 class BotStatusData:
     def __init__(
         self,
-        name,
-        operators,
-        last_edit_timestamp,
-        last_log_timestamp,
-        last_operator_activity_timestamp,
-        edit_count,
-        groups,
-        block_data,
+        *,
+        name: str,
+        operators: List[str],
+        last_edit_timestamp: Optional[str],
+        last_log_timestamp: Optional[str],
+        last_operator_activity_timestamp: Optional[str],
+        edit_count: Optional[int],
+        groups: Optional[List[str]],
+        block_data: Optional[dict],
     ):
         self.name = name
         self.operators = set(operators)
@@ -79,10 +81,31 @@ class BotStatusData:
             self.last_operator_activity_timestamp = last_operator_activity_timestamp
 
         self.edit_count = edit_count
-        self.groups = list(filter(lambda x: x not in STANDARD_GROUPS, groups))
+
+        if groups:
+            self.groups = list(filter(lambda x: x not in STANDARD_GROUPS, groups))
+        else:
+            self.groups = []
+
         self.block_data = block_data
 
-    def format_number(self, number, sortkey=True):
+    @staticmethod
+    def new_for_unknown(name: str) -> "BotStatusData":
+        return BotStatusData(
+            name=name,
+            operators=[],
+            last_edit_timestamp=None,
+            last_log_timestamp=None,
+            last_operator_activity_timestamp=None,
+            edit_count=None,
+            groups=None,
+            block_data=None,
+        )
+
+    def format_number(self, number: Optional[int], sortkey=True):
+        if not number:
+            return EMPTY_COLUMN
+
         if sortkey:
             return 'class="nowrap" data-sort-value={} | {:,}'.format(number, number)
         return "{:,}".format(number)
@@ -93,9 +116,6 @@ class BotStatusData:
         return datetime.strptime(string, MEDIAWIKI_DATE_FORMAT)
 
     def format_date(self, date, sortkey=True):
-        if date == "infinite":
-            return "infinite"
-
         if date is None:
             return EMPTY_COLUMN
 
@@ -118,14 +138,19 @@ class BotStatusData:
 
     def format_block(self):
         date = self.parse_date(self.block_data["at"])
+
         return (
-            "data-sort-value=%s | %s by {{no ping|%s}} on %s to expire at %s.<br/>Block reason is '%s{{'}}"
+            "data-sort-value=%s | %s by {{no ping|%s}} on %s%s.<br/>Block reason is '%s{{'}}"
             % (
                 date.strftime(MEDIAWIKI_DATE_FORMAT),
                 "Partially blocked" if self.block_data["partial"] else "Blocked",
                 self.block_data["by"],
                 self.format_date(date, sortkey=False),
-                self.format_date(self.block_data["expiry"], sortkey=False),
+                "to expire at {}".format(
+                    self.format_date(self.block_data["expiry"], sortkey=False)
+                )
+                if self.block_data["expiry"] != "infinite"
+                else "",
                 self.format_block_reason(),
             )
         )
@@ -224,26 +249,27 @@ class BotStatusTask(Task):
 
             operator_activity = None
             for operator in operators:
-                if operator == "MZMcBride":
-                    # I'm sure this won't cause any problems what so ever!
-                    # working around too slow sql queries getting timed out
-                    continue
-
                 print("- Loading data for operator %s" % operator)
-                operator_activity_data = QueryGenerator(
-                    site=self.get_mediawiki_api().get_site(),
-                    list="usercontribs|logevents",
-                    # for list=usercontribs
-                    uclimit=1,
-                    ucuser=operator,
-                    ucdir="older",
-                    ucprop="ids|timestamp",
-                    # for list=logevents
-                    lelimit=1,
-                    leuser=operator,
-                    ledir="older",
-                    leprop="ids|timestamp",
-                ).request.submit()
+                try:
+                    operator_activity_data = QueryGenerator(
+                        site=self.get_mediawiki_api().get_site(),
+                        list="usercontribs|logevents",
+                        # for list=usercontribs
+                        uclimit=1,
+                        ucuser=operator,
+                        ucdir="older",
+                        ucprop="ids|timestamp",
+                        # for list=logevents
+                        lelimit=1,
+                        leuser=operator,
+                        ledir="older",
+                        leprop="ids|timestamp",
+                    ).request.submit()
+                except Exception as e:
+                    # TODO: make better error handling
+                    print(e, file=sys.stderr)
+
+                    continue
 
                 if "query" in operator_activity_data:
                     if len(operator_activity_data["query"]["usercontribs"]) > 0:
@@ -303,10 +329,13 @@ class BotStatusTask(Task):
             print("Loading data for bot", username)
             try:
                 data = self.get_bot_data(username)
-                table += data.to_table_row()
             except Exception as e:
                 # TODO: make better error handling
                 print(e, file=sys.stderr)
+
+                data = BotStatusData.new_for_unknown(username)
+
+            table += data.to_table_row()
             # to not create unnecessary lag, let's process max 1 bot in 5 seconds as speed is not needed on cronjobs
             delay.wait()
 
