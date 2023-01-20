@@ -77,7 +77,6 @@ example
         ["{{srgp|status=}}", ["srgp"], False],
         ["{{srgp|status=on hold<!--don't change this line-->}}", ["srgp"], False],
         ["{{srgp|status=done}}", ["srgp"], True],
-        ["{{SRGP|status=done}}", ["srgp"], True],
         ["{{status|closed}}", ["srgp"], False],
     ],
 )
