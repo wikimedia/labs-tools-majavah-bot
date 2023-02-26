@@ -209,13 +209,10 @@ class EffpTask(Task):
         if len(processed_sections) == 1:
             if len(process_reasons.keys()) <= 3:
                 summary.append(
-                    "Processed section "
-                    + processed_sections[0]
-                    + ": "
-                    + (", ".join(process_reasons.keys()))
+                    "Processed a section: " + (", ".join(process_reasons.keys()))
                 )
             else:
-                summary.append("Processed section " + processed_sections[0])
+                summary.append("Processed a section")
         elif len(processed_sections) > 1:
             if len(process_reasons.keys()) == 1:
                 reason = list(process_reasons.keys())[0]
@@ -232,7 +229,7 @@ class EffpTask(Task):
         if len(archived_sections) > 1:
             summary.append("Archive " + str(len(archived_sections)) + " sections")
         elif len(archived_sections) > 0:
-            summary.append("Archive section " + archived_sections[0])
+            summary.append("Archive one section")
 
         return "Bot clerking: " + ", ".join(summary)
 
