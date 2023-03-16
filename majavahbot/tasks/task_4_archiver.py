@@ -15,6 +15,7 @@ where
     page_namespace in ({namespaces})
     and page_title not like '%/%'
     and page_len > 5000
+    and page_is_redirect = 0
     and not exists (
         select 1
         from templatelinks
