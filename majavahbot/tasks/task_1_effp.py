@@ -102,6 +102,7 @@ class EffpTask(Task):
                     "abuse_log_format"
                 ) % api.get_page(last_hit_page_title).title(as_url=True)
 
+                section_pre_subst = new_section
                 new_section = sub(
                     self.get_task_configuration("page_title_regex"),
                     ";Page you were editing\n: [["
@@ -112,14 +113,15 @@ class EffpTask(Task):
                     new_section,
                 )
 
+                if section_pre_subst == new_section:
+                    # Unable to replace, probably malformed requests
+                    pass
                 if page_title_missing:
                     new_section += ":{{EFFP|pagenameadded|bot=1}} ~~~~\n"
                     edit_summary.append("Add affected page name (task 1a)")
                 elif page_title_obviously_wrong:
                     new_section += ":{{EFFP|pagenamefixed|bot=1}} ~~~~\n"
                     edit_summary.append("Fix affected page name (task 1b)")
-                else:
-                    raise
 
             # subtask c: notify if filter is private
             private = 0
