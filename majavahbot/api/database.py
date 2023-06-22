@@ -65,7 +65,7 @@ class BaseDatabase:
 
 class ReplicaDatabase(BaseDatabase):
     def __init__(self, db: str):
-        super.__init__()
+        super().__init__()
         self.db_name = db
 
     def get_connection(self) -> pymysql.Connection:
