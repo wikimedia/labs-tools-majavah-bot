@@ -11,13 +11,13 @@ blueprint = Blueprint("majavah-bot", __name__)
 def map_task(db_row):
     registry_task = task_registry.get_task_by_number(db_row[0])
     return {
-        "number": db_row[0],
-        "name": db_row[1],
+        "number": db_row["id"],
+        "name": db_row["name"],
         "is_continuous": registry_task.is_continuous,
         "site": registry_task.site,
         "family": registry_task.family,
-        "approved": db_row[2] == 1,
-        "trial": db_row[3] == 1,
+        "approved": db_row["approved"] == 1,
+        "trial": db_row["in_trial"] == 1,
     }
 
 
@@ -31,8 +31,8 @@ def get_badge_color_for_status(status):
 
 
 def format_duration(job):
-    started_at = job[5]
-    ended_at = job[6]
+    started_at = job["started_at"]
+    ended_at = job["ended_at"]
     duration = ended_at - started_at
     hours, remainder = divmod(duration.total_seconds(), 3600)
     minutes, seconds = divmod(remainder, 60)

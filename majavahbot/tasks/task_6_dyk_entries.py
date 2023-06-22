@@ -252,8 +252,8 @@ class DykEntryTalkTask(Task):
                 print("Can't edit anymore, done")
                 break
 
-            page_id = page_from_db[0]
-            page_name = page_from_db[1].decode("utf-8")
+            page_id = page_from_db["page_id"]
+            page_name = page_from_db["page_title"]
 
             page = api.get_page("Talk:" + page_name)
             assert page.pageid == page_id

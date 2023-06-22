@@ -2,7 +2,6 @@ certifi
 chardet
 dateparser
 idna
-mysql-connector
 python-dateutil
 pytz
 pywikibot
@@ -14,3 +13,5 @@ tzlocal
 urllib3
 mwparserfromhell
 flask
+pymysql
+toolforge

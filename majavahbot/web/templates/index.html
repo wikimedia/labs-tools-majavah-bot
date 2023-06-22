@@ -74,34 +74,34 @@
                         {% for job in jobs %}
                             <tr>
                                 <td>
-                                    {{ job[0] }}
+                                    {{ job.id }}
                                 </td>
 
                                 <td>
-                                    <span class="badge {{ get_badge_color_for_status(job[1]) }}">
-                                         {{ job[1] }}
+                                    <span class="badge {{ get_badge_color_for_status(job.status) }}">
+                                         {{ job.status }}
                                     </span>
                                 </td>
 
                                 <td>
-                                    {{ job[5] }}
+                                    {{ job.started_at }}
 
-                                    {% if job[6] is not none %}
+                                    {% if job.started_at is not none %}
                                         <br/>
                                         <small class="text-small text-muted">took {{ format_duration(job) }}</small>
                                     {% endif %}
                                 </td>
 
                                 <td>
-                                    {{ job[2] }}
+                                    {{ job.job_name }}
                                 </td>
 
                                 <td>
-                                    {{ job[3] }}
+                                    {{ job.task_id }}
                                 </td>
 
                                 <td>
-                                    {{ job[4] }}
+                                    {{ job.task_wiki }}
                                 </td>
                             </tr>
                         {% endfor %}

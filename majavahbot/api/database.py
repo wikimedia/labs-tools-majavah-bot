@@ -1,123 +1,108 @@
 from datetime import datetime
 
-import mysql.connector
+import pymysql
+import toolforge
 
 from majavahbot.api.consts import JOB_STATUS_RUNNING
-from majavahbot.config import (
-    analytics_db_hostname,
-    analytics_db_option_file,
-    analytics_db_port,
-    own_db_database,
-    own_db_hostname,
-    own_db_option_file,
-)
+from majavahbot.config import own_db_database
 
 
 class BaseDatabase:
-    def __init__(self, host, port, option_files, database):
+    def __init__(self):
         self.open = 0
-        self.database = mysql.connector.connect(
-            host=host, port=port, option_files=option_files, database=database
-        )
+        self.database = None
+
+    def get_connection(self) -> pymysql.Connection:
+        raise NotImplemented()
 
     def request(self):
-        if self.open < 1:
-            self.database.connect()
+        if self.open < 1 or self.database is None:
+            self.database = self.get_connection()
         self.open += 1
 
     def close(self):
         self.open -= 1
         if self.open < 1:
-            self.database.disconnect()
+            self.database.close()
+            self.database = None
 
-    def commit(self):
-        self.database.commit()
-
-    def run(self, sql: str, values=(), get_id=False):
-        last_row_id = None
+    def connected(self):
         self.request()
-        cursor = self.database.cursor(buffered=True)
-        cursor.execute(sql, values)
-        if get_id:
-            last_row_id = cursor.lastrowid
-        cursor.close()
-        self.commit()
+        yield self.database
         self.close()
-        return last_row_id
 
-    def get_one(self, sql: str, values=()):
-        self.request()
-        cursor = self.database.cursor(buffered=True)
-        cursor.execute(sql, values)
-        results = cursor.fetchone()
-        cursor.close()
-        self.commit()
-        self.close()
-        return results
+    def cursor(self):
+        with self.connected() as database:
+            yield database.cursor()
 
-    def get_all(self, sql: str, values=()):
-        self.request()
-        cursor = self.database.cursor(buffered=True)
-        cursor.execute(sql, values)
-        results = cursor.fetchall()
-        cursor.close()
-        self.commit()
-        self.close()
-        return results
+    def get_one(self, sql: str, params=None):
+        with self.cursor() as cursor:
+            cursor.execute(sql, params)
+            return cursor.fetchone()
+
+    def get_all(self, sql: str, params=None):
+        with self.cursor() as cursor:
+            cursor.execute(sql, params)
+            return cursor.fetchall()
+
+    def insert(self, sql: str, params=None):
+        with self.connected() as database:
+            with database.cursor() as cursor:
+                cursor.execute(sql, params)
+                database.commit()
+
+    def update(self, sql: str, params=None) -> int:
+        with self.connected() as database:
+            with database.cursor() as cursor:
+                cursor.execute(sql, params)
+                database.commit()
+
+                return cursor.lastrowid
 
 
 class ReplicaDatabase(BaseDatabase):
     def __init__(self, db: str):
-        while db.endswith("_p"):
-            db = db[:-2]
-
         self.db_name = db
-        super().__init__(
-            host=analytics_db_hostname.replace("{DB}", db),
-            port=analytics_db_port,
-            option_files=analytics_db_option_file,
-            database=db + "_p",
+
+    def get_connection(self) -> pymysql.Connection:
+        return toolforge.connect(
+            self.db_name,
+            cluster="analytics",
+            cursorclass=pymysql.cursors.DictCursor,
         )
 
     def get_replag(self):
-        query = "SELECT lag FROM heartbeat_p.heartbeat;"
-        results = self.get_one(query)
-        return results[0]
+        results = self.get_one("SELECT lag FROM heartbeat_p.heartbeat;")
+        return results["lag"]
 
 
 class TaskDatabase(BaseDatabase):
-    def __init__(self):
-        super().__init__(
-            host=own_db_hostname,
-            port=3306,
-            option_files=own_db_option_file,
-            database=own_db_database,
+    def get_connection(self) -> pymysql.Connection:
+        return toolforge.toolsdb(
+            own_db_database, cursorclass=pymysql.cursors.DictCursor
         )
 
     def init(self):
-        self.request()
-
-        self.run(
-            "create table if not exists tasks (id integer primary key not null, name varchar(255) not null,"
-            "approved tinyint(1) default 0 not null);"
-        )
-        self.run(
-            "create table if not exists task_trials (id integer primary key auto_increment not null,"
-            "task_id integer not null, created_at timestamp default current_timestamp not null,"
-            "max_days integer default 0 not null, max_edits integer default 0 not null,"
-            "edits_done integer default 0 not null, closed tinyint(1) default 0 not null);"
-        )
-        self.run(
-            "create table if not exists jobs (id integer primary key auto_increment not null,"
-            "status varchar(16) not null, job_name varchar(64) not null,"
-            "task_id integer not null, task_wiki varchar(16) not null,"
-            "started_at timestamp not null default now(), ended_at timestamp default 0);"
-        )
-
-        self.close()
+        with self.connected():
+            self.update(
+                "create table if not exists tasks (id integer primary key not null, name varchar(255) not null,"
+                "approved tinyint(1) default 0 not null);"
+            )
+            self.update(
+                "create table if not exists task_trials (id integer primary key auto_increment not null,"
+                "task_id integer not null, created_at timestamp default current_timestamp not null,"
+                "max_days integer default 0 not null, max_edits integer default 0 not null,"
+                "edits_done integer default 0 not null, closed tinyint(1) default 0 not null);"
+            )
+            self.update(
+                "create table if not exists jobs (id integer primary key auto_increment not null,"
+                "status varchar(16) not null, job_name varchar(64) not null,"
+                "task_id integer not null, task_wiki varchar(16) not null,"
+                "started_at timestamp not null default now(), ended_at timestamp default 0);"
+            )
 
     def insert_task(self, number, name):
-        self.run(
+        self.update(
             "insert into tasks(id, name) values (%s, %s) on duplicate key update name = %s;",
             (number, name, name),
         )
@@ -126,7 +111,7 @@ class TaskDatabase(BaseDatabase):
         results = self.get_one(
             "select approved from tasks where id = %s limit 1;", (number,)
         )
-        return bool(results[0])
+        return bool(results["approved"])
 
     def get_trial(self, number):
         results = self.get_one(
@@ -139,13 +124,13 @@ class TaskDatabase(BaseDatabase):
             return None
 
         results = {
-            "id": results[0],
-            "task_id": results[1],
-            "created_at": results[2],
-            "max_days": results[3],
-            "max_edits": results[4],
-            "edits_done": results[5],
-            "closed": bool(results[6]),
+            "id": results["id"],
+            "task_id": results["task_id"],
+            "created_at": results["created_at"],
+            "max_days": results["max_days"],
+            "max_edits": results["max_edits"],
+            "edits_done": results["edits_done"],
+            "closed": results["closed"] == 1,
         }
 
         if results["max_days"] >= 0 and (
@@ -159,13 +144,13 @@ class TaskDatabase(BaseDatabase):
         return results
 
     def record_trial_edit(self, trial_id: int):
-        self.run(
+        self.update(
             "update task_trials set edits_done = edits_done + 1 where id = %s;",
             (trial_id,),
         )
 
     def start_job(self, job_name: str, task_id: int, task_wiki: str):
-        return self.run(
+        return self.insert(
             "insert into jobs (job_name, task_id, task_wiki, status, started_at)"
             "values (%s, %s, %s, %s, CURRENT_TIMESTAMP())",
             (
@@ -178,7 +163,7 @@ class TaskDatabase(BaseDatabase):
         )
 
     def stop_job(self, job_id: str, status: str):
-        self.run(
+        self.update(
             "update jobs set ended_at=current_timestamp(), status = %s where id = %s",
             (
                 status,

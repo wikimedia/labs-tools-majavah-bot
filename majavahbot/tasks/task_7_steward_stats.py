@@ -3,7 +3,7 @@ from majavahbot.tasks import Task, task_registry
 
 QUERY = """/* MajavahBot task 7 */
 select
-  concat ("{{u|", user_name, "}}") as "username",
+  concat ("{{u|", user_name, "}}") as "user",
   (
     select
       count(*)
@@ -13,7 +13,7 @@ select
     where
       actor_user = user_id
       and log_type = "gblblock"
-  ) as "+Global block",
+  ) as "global_blocks",
   (
     select
       count(*)
@@ -23,7 +23,7 @@ select
     where
       actor_user = user_id
       and log_type = "globalauth"
-  ) as "+Global lock",
+  ) as "global_locks",
   (
     select
       count(*)
@@ -33,7 +33,7 @@ select
     where
       actor_user = user_id
       and log_type = "gblrename"
-  ) as "+Global rename",
+  ) as "global_renames",
   (
     select
       count(*)
@@ -43,7 +43,7 @@ select
     where
       actor_user = user_id
       and log_type = "gblrights"
-  ) as "+Global rights",
+  ) as "global_rights",
   (
     select
       count(*)
@@ -53,7 +53,7 @@ select
     where
       actor_user = user_id
       and log_type = "rights"
-  ) as "+Rights",
+  ) as "rights",
   (
     select
       count(*)
@@ -63,7 +63,7 @@ select
     where
       actor_user = user_id
       and log_type = "abusefilter"
-  ) as "+Af edits",
+  ) as "filter_edits",
   (
     (
       select
@@ -85,7 +85,7 @@ select
         and rev_page = 13356
         and rev_minor_edit = 0
     )
-  ) as "SR edits"
+  ) as "sr_edits"
 from
   user
   inner join user_groups on ug_user = user_id
@@ -120,27 +120,19 @@ class StewardStatsTask(Task):
         table = ""
 
         for row in results:
-            (
-                user,
-                global_blocks,
-                global_locks,
-                global_renames,
-                global_rights,
-                rights,
-                filter_edits,
-                sr_edits,
-            ) = row
-            total = (
-                global_blocks
-                + global_locks
-                + global_renames
-                + global_rights
-                + rights
-                + filter_edits
-                + sr_edits
+            row["total"] = (
+                row["global_blocks"]
+                + row["global_locks"]
+                + row["global_renames"]
+                + row["global_rights"]
+                + row["rights"]
+                + row["filter_edits"]
+                + row["sr_edits"]
             )
 
-            table += f"|-\n| {user.decode('utf-8')} || {global_blocks} || {global_locks} || {global_renames} || {global_rights} || {rights} || {filter_edits} || {sr_edits} || {total}\n"
+            table += "|-\n| {user} || {global_blocks} || {global_locks} || {global_renames} || {global_rights} || {rights} || {filter_edits} || {sr_edits} || {total}\n".format(
+                *row
+            )
 
         content = PAGE_TEMPLATE % {"results": table, "user": site.username()}
 

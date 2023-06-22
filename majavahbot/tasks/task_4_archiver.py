@@ -74,9 +74,9 @@ class AchieverBot(Task):
 
         print("-- Got %s pages" % (str(len(results))))
         for page_from_db in results:
-            page_id = page_from_db[0]
-            page_ns = page_from_db[1]
-            page_name = page_from_db[2].decode("utf-8")
+            page_id = page_from_db["page_id"]
+            page_ns = page_from_db["page_namespace"]
+            page_name = page_from_db["page_title"]
 
             page = pywikibot.Page(api.get_site(), page_name, ns=page_ns)
             page_text = page.get()

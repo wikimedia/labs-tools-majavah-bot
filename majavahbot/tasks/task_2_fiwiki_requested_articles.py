@@ -14,7 +14,7 @@ EXISTING_PAGE_QUERY = """
 SELECT page_title FROM page
 WHERE page_namespace = 0
 AND page_is_redirect = 0
-AND page_title IN (%s)
+AND page_title IN ({})
 AND NOT EXISTS (SELECT cl_from FROM categorylinks WHERE cl_from = page.page_id AND cl_to IN ("Täsmennyssivut", "Pikapoisto"))
 AND EXISTS (SELECT fp_page_id FROM flaggedpages WHERE fp_page_id = page.page_id AND fp_reviewed = 1)
 """
@@ -82,7 +82,7 @@ class FiwikiRequestedArticlesTask(Task):
         page_titles = requests.keys()
         format_strings = ",".join(["%s"] * len(page_titles))
         existing_pages = replica.get_all(
-            EXISTING_PAGE_QUERY % format_strings, tuple(page_titles)
+            EXISTING_PAGE_QUERY.format(format_strings), tuple(page_titles)
         )
 
         removed_entries = []
@@ -90,12 +90,10 @@ class FiwikiRequestedArticlesTask(Task):
 
         print("-- Found %s filled requests" % (str(len(existing_pages))))
         for existing_page in existing_pages:
-            existing_page = existing_page[0].decode("utf-8")
+            existing_page = existing_page["page_title"]
             existing_page_entry = requests[existing_page]
-            print(
-                "- Request %s (%s)"
-                % (existing_page, existing_page_entry.replace("\n", ""))
-            )
+            entry_formatted = existing_page_entry.replace("\n", "")
+            print(f"- Request {existing_page} ({entry_formatted})")
 
             other_links = list(OTHER_WIKI_LINK_REGEX.finditer(existing_page_entry))
 
