@@ -72,6 +72,7 @@ class ReplicaDatabase(BaseDatabase):
         return toolforge.connect(
             self.db_name,
             cluster="analytics",
+            charset="utf8",
             cursorclass=pymysql.cursors.DictCursor,
         )
 
@@ -83,7 +84,9 @@ class ReplicaDatabase(BaseDatabase):
 class TaskDatabase(BaseDatabase):
     def get_connection(self) -> pymysql.Connection:
         return toolforge.toolsdb(
-            own_db_database, cursorclass=pymysql.cursors.DictCursor
+            own_db_database,
+            cursorclass=pymysql.cursors.DictCursor,
+            charset="utf8",
         )
 
     def init(self):
