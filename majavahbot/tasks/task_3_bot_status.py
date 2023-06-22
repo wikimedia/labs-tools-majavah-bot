@@ -180,7 +180,7 @@ class BotStatusData:
     def format_operators(self):
         if len(self.operators) == 0:
             return EMPTY_COLUMN
-        return "{{no ping|" + "}}, {{no ping|".join(self.operators) + "}}"
+        return "{{no ping|" + "}}, {{no ping|".join(sorted(self.operators)) + "}}"
 
 
 class BotStatusTask(Task):
