@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from datetime import datetime
 
 import pymysql
@@ -26,11 +27,13 @@ class BaseDatabase:
             self.database.close()
             self.database = None
 
+    @contextmanager
     def connected(self):
         self.request()
         yield self.database
         self.close()
 
+    @contextmanager
     def cursor(self):
         with self.connected() as database:
             yield database.cursor()
