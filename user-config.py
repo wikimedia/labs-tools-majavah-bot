@@ -1,3 +1,5 @@
+from pathlib import Path
+
 family = "wikipedia"
 mylang = "en"
 
@@ -7,7 +9,10 @@ usernames["wikipedia"]["en"] = "MajavahBot"
 usernames["wikipedia"]["fi"] = "MajavahBot"
 usernames["wikipedia"]["sq"] = "MajavahBot"
 usernames["wikiquote"]["sq"] = "MajavahBot"
-usernames["wikidata"]["wikidata"] = "MajavahBot"
-usernames["meta"]["meta"] = "MajavahBot"
+usernames['wikidata']['wikidata'] = "MajavahBot"
+usernames['meta']['meta'] = "MajavahBot"
 
-password_file = "user-password.py"
+if Path("/data/project/majavah-bot/.pywikibot/user-password.py").exists():
+	password_file = "/data/project/majavah-bot/.pywikibot/user-password.py"
+else:
+	password_file = "user-password.py"
