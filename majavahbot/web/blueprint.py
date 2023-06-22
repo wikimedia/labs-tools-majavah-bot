@@ -9,7 +9,7 @@ blueprint = Blueprint("majavah-bot", __name__)
 
 
 def map_task(db_row):
-    registry_task = task_registry.get_task_by_number(db_row[0])
+    registry_task = task_registry.get_task_by_number(db_row["id"])
     return {
         "number": db_row["id"],
         "name": db_row["name"],
