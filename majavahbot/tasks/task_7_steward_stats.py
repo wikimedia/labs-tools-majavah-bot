@@ -131,7 +131,7 @@ class StewardStatsTask(Task):
             )
 
             table += "|-\n| {user} || {global_blocks} || {global_locks} || {global_renames} || {global_rights} || {rights} || {filter_edits} || {sr_edits} || {total}\n".format(
-                *row
+                **row
             )
 
         content = PAGE_TEMPLATE % {"results": table, "user": site.username()}
