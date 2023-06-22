@@ -69,12 +69,10 @@ def cli_task(
         print("Task configuration for task", task.number)
         print(task.get_task_configuration())
         exit(0)
-        return
 
     if not task.should_edit():
         print("Task is not approved")
         exit(1)
-        return
 
     if run:
         print("Starting task", task.number)
@@ -102,12 +100,12 @@ def cli_task(
         exit(1)
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="subparser")
 
-    whoami_parser = subparsers.add_parser("whoami")
-    task_list_parser = subparsers.add_parser("task_list")
+    subparsers.add_parser("whoami")
+    subparsers.add_parser("task_list")
 
     replica_parser = subparsers.add_parser("check_replica")
     replica_parser.add_argument(
