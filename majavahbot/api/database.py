@@ -154,15 +154,13 @@ class TaskDatabase(BaseDatabase):
 
     def start_job(self, job_name: str, task_id: int, task_wiki: str):
         return self.insert(
-            "insert into jobs (job_name, task_id, task_wiki, status, started_at)"
-            "values (%s, %s, %s, %s, CURRENT_TIMESTAMP())",
+            "insert into jobs (job_name, task_id, task_wiki, status, started_at) values (%s, %s, %s, %s, CURRENT_TIMESTAMP())",
             (
                 job_name,
                 task_id,
                 task_wiki,
                 JOB_STATUS_RUNNING,
             ),
-            True,
         )
 
     def stop_job(self, job_id: str, status: str):
