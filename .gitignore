@@ -6,6 +6,7 @@ apicache-py3/
 /.idea
 *.pyc
 replica.my.cnf
+/.tox
 
 # ignore actual config
 /majavahbot/config.py
