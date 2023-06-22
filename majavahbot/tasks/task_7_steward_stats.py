@@ -120,6 +120,7 @@ class StewardStatsTask(Task):
         table = ""
 
         for row in results:
+            row["user"] = row["user"].decode("utf-8")
             row["total"] = (
                 row["global_blocks"]
                 + row["global_locks"]

@@ -90,7 +90,7 @@ class FiwikiRequestedArticlesTask(Task):
 
         print("-- Found %s filled requests" % (str(len(existing_pages))))
         for existing_page in existing_pages:
-            existing_page = existing_page["page_title"]
+            existing_page = existing_page["page_title"].decode("utf-8")
             existing_page_entry = requests[existing_page]
             entry_formatted = existing_page_entry.replace("\n", "")
             print(f"- Request {existing_page} ({entry_formatted})")

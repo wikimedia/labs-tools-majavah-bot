@@ -253,7 +253,7 @@ class DykEntryTalkTask(Task):
                 break
 
             page_id = page_from_db["page_id"]
-            page_name = page_from_db["page_title"]
+            page_name = page_from_db["page_title"].decode("utf-8")
 
             page = api.get_page("Talk:" + page_name)
             assert page.pageid == page_id
