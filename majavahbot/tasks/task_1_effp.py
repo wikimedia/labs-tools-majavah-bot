@@ -116,7 +116,7 @@ class EffpTask(Task):
                 if section_pre_subst == new_section:
                     # Unable to replace, probably malformed requests
                     pass
-                if page_title_missing:
+                elif page_title_missing:
                     new_section += ":{{EFFP|pagenameadded|bot=1}} ~~~~\n"
                     edit_summary.append("Add affected page name (task 1a)")
                 elif page_title_obviously_wrong:
