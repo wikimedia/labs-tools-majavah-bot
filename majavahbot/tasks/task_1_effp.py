@@ -151,7 +151,10 @@ class EffpTask(Task):
             user = api.get_user(user_name)
         except InvalidTitleError:
             if "{{EFFP|" not in section and "<" not in user_name:
-                new_section += f":{{EFFP|note|bot=1}} Failed to retrieve details about user <code><nowiki>{{user_name}}</nowiki></code>! ~~~~\n"
+                new_section += (
+                    ":{{EFFP|note|bot=1}} Failed to retrieve details about user <code><nowiki>%s</nowiki></code>! ~~~~\n"
+                    % user_name
+                )
                 edit_summary.append("Failed to load user details")
                 return new_section, edit_summary
 
