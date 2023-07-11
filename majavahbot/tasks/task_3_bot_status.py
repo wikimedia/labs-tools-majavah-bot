@@ -1,3 +1,4 @@
+import logging
 import sys
 from datetime import datetime
 from typing import List, Optional
@@ -8,6 +9,8 @@ from pywikibot.data.api import QueryGenerator
 from majavahbot.api.consts import HUMAN_DATE_FORMAT, MEDIAWIKI_DATE_FORMAT
 from majavahbot.api.utils import create_delay
 from majavahbot.tasks import Task, task_registry
+
+LOGGER = logging.getLogger(__name__)
 
 # Groups in this array will not be shown as additional user rights
 STANDARD_GROUPS = ["bot", "*", "user", "autoconfirmed", "extendedconfirmed"]
