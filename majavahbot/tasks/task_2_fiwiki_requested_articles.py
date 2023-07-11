@@ -1,3 +1,4 @@
+import logging
 from re import compile
 
 from pywikibot import Page
@@ -5,6 +6,8 @@ from pywikibot import Page
 from majavahbot.api import MediawikiApi, ReplicaDatabase, get_mediawiki_api, manual_run
 from majavahbot.config import requested_articles_config_page
 from majavahbot.tasks import Task, task_registry
+
+LOGGER = logging.getLogger(__name__)
 
 ENTRY_REGEX = compile(r"\n:*\*+ ?([^\n]+)")
 LOCAL_LINK_REGEX = compile(r"\[\[([^\:\]]+)\]\]")
@@ -46,14 +49,15 @@ class FiwikiRequestedArticlesTask(Task):
                 found_wikidata_ids.add(str(other_wikidata_id))
 
             if len(found_wikidata_ids) != 1:
-                print(
-                    "Found %s different Wikidata Qs: %s"
-                    % (len(found_wikidata_ids), ", ".join(found_wikidata_ids))
+                LOGGER.info(
+                    "Found %s different Wikidata Qs: %s",
+                    len(found_wikidata_ids),
+                    ", ".join(found_wikidata_ids),
                 )
                 return False
             return True
         except:
-            print(
+            LOGGER.info(
                 "Got an error while comparing Wikidata Qs, check if page is connected to wikidata"
             )  # ignore; will return false
 
@@ -88,17 +92,19 @@ class FiwikiRequestedArticlesTask(Task):
         removed_entries = []
         new_text = text
 
-        print("-- Found %s filled requests" % (str(len(existing_pages))))
+        LOGGER.info("-- Found %s filled requests", (str(len(existing_pages))))
         for existing_page in existing_pages:
             existing_page = existing_page["page_title"].decode("utf-8")
             existing_page_entry = requests[existing_page]
             entry_formatted = existing_page_entry.replace("\n", "")
-            print(f"- Request {existing_page} ({entry_formatted})")
+            LOGGER.info("- Request %s (%s)", existing_page, entry_formatted)
 
             other_links = list(OTHER_WIKI_LINK_REGEX.finditer(existing_page_entry))
 
             if len(other_links) >= 1:
-                print("Found at least 1 link to other wiki, comparing Wikidata Q's...")
+                LOGGER.info(
+                    "Found at least 1 link to other wiki, comparing Wikidata Q's..."
+                )
                 local_page = api.get_page(existing_page)
                 if not self.compare_wikidata_qs(local_page, api, other_links):
                     continue
@@ -123,9 +129,9 @@ class FiwikiRequestedArticlesTask(Task):
                 )
             )
 
-            print(
-                "Removing %s requests from page %s"
-                % (str(removed_length), page.title(as_link=True))
+            LOGGER.info(
+                "Removing %s requests from page %s",
+                (str(removed_length), page.title(as_link=True)),
             )
             if not self.is_manual_run or manual_run.confirm_edit():
                 page.text = new_text
@@ -138,12 +144,12 @@ class FiwikiRequestedArticlesTask(Task):
         replicadb.request()
 
         if self.get_task_configuration("run") is not True:
-            print("Disabled in configuration")
+            LOGGER.error("Disabled in configuration")
             return
 
         for page in self.get_task_configuration("pages"):
-            print()
-            print("--- Processing page", page)
+            LOGGER.info("")
+            LOGGER.info("--- Processing page %s", page)
             self.process_page(page, api, replicadb)
 
         replicadb.close()

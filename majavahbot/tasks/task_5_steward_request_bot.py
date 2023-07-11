@@ -1,5 +1,6 @@
 import collections
 import ipaddress
+import logging
 from datetime import datetime, timezone
 from tokenize import Comment
 from typing import Dict, List
@@ -13,6 +14,8 @@ from majavahbot.api.mediawiki import MediawikiApi
 from majavahbot.api.utils import remove_empty_lines_before_replies, was_enough_time_ago
 from majavahbot.config import steward_request_bot_config_page
 from majavahbot.tasks import Task, task_registry
+
+LOGGER = logging.getLogger(__name__)
 
 OPEN_STATUSES = ("", "hold", "onhold", "on hold", "in progress", "inprogress")
 
@@ -173,7 +176,9 @@ class StewardRequestTask(Task):
         if ("unlock" in header and "/unlock" not in header) or (
             "unblock" in header and "/unblock" not in header
         ):
-            print(f"Assuming section {header} is a un(b)lock request, skipping")
+            LOGGER.info(
+                "Assuming section '%s' is a un(b)lock request, skipping", header
+            )
             return False
 
         mark_done = True
@@ -192,7 +197,6 @@ class StewardRequestTask(Task):
             else:
                 awesome_people.add(steward)
 
-        print(accounts, ips, awesome_people, mark_done)
         if not mark_done or len(awesome_people) == 0:
             return False
 
@@ -204,7 +208,6 @@ class StewardRequestTask(Task):
             section.append(
                 ": '''Robot clerk note:''' {{done}} by " + awesome_people + ". ~~~~\n"
             )
-            print("Marking as done", awesome_people, status, ips, accounts)
 
         return False
 
@@ -218,7 +221,7 @@ class StewardRequestTask(Task):
         is_srg: bool,
         custom_templates: List[str],
     ):
-        print(f"processing page {page}")
+        LOGGER.info("processing page %s", page)
         request_page = api.get_page(page)
         request_original_text = request_page.get(force=True)
 
@@ -252,7 +255,7 @@ class StewardRequestTask(Task):
                 ).total_seconds() <= self.get_task_configuration("archive_min_time"):
                     continue
 
-                print(f"Archiving section {section}")
+                LOGGER.info("Archiving section %s", section)
                 to_archive[tls_header_text].append(str(section).strip())
                 parsed.replace(section, "")
 
@@ -336,7 +339,7 @@ class StewardRequestTask(Task):
         )
 
         if self.get_task_configuration("run") is not True:
-            print("Disabled in configuration")
+            LOGGER.error("Disabled in configuration")
             return
 
         api = self.get_mediawiki_api()

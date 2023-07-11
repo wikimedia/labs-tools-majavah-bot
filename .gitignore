@@ -1,6 +1,6 @@
 user-password.py
 throttle.ctrl
-pywikibot.lwp
+*.lwp
 venv/
 apicache-py3/
 /.idea

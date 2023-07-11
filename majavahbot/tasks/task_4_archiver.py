@@ -1,8 +1,12 @@
+import logging
+
 import pywikibot
 
 from majavahbot.api import ReplicaDatabase
 from majavahbot.api.manual_run import confirm_edit
 from majavahbot.tasks import Task, task_registry
+
+LOGGER = logging.getLogger(__name__)
 
 QUERY = """
 select
@@ -43,7 +47,7 @@ class AchieverBot(Task):
 
     def run(self):
         if self.param != "autosetup":
-            print("Unknown mode")
+            LOGGER.error("Unknown mode %s", self.param)
             return
 
         self.merge_task_configuration(
@@ -54,7 +58,7 @@ class AchieverBot(Task):
         )
 
         if self.get_task_configuration("autosetup_run") is not True:
-            print("Disabled in configuration")
+            LOGGER.error("Disabled in configuration")
             return
 
         api = self.get_mediawiki_api()
@@ -62,7 +66,7 @@ class AchieverBot(Task):
 
         replag = replicadb.get_replag()
         if replag > 10:
-            print("Replag is over 10 seconds, not processing! (" + str(replag) + ")")
+            LOGGER.error("Replag is over 10 seconds, not processing! (%ss)", replag)
             return
 
         namespaces = self.get_task_configuration("autosetup_namespaces")
@@ -72,7 +76,7 @@ class AchieverBot(Task):
             QUERY.format(namespaces=namespace_placeholders), tuple(namespaces)
         )
 
-        print("-- Got %s pages" % (str(len(results))))
+        LOGGER.info("-- Got %s pages", len(results))
         for page_from_db in results:
             page_id = page_from_db["page_id"]
             page_ns = page_from_db["page_namespace"]
@@ -82,7 +86,7 @@ class AchieverBot(Task):
             page_text = page.get()
             assert page.pageid == page_id
 
-            print("Tagging page ", page.title())
+            LOGGER.info("Tagging page %s", page.title())
             new_text = self.get_task_configuration("autosetup_tag") + "\n\n" + page_text
             if new_text != page_text and (not self.is_manual_run or confirm_edit()):
                 api.site.login()

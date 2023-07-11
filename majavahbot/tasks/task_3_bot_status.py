@@ -249,7 +249,7 @@ class BotStatusTask(Task):
 
             operator_activity = None
             for operator in operators:
-                print("- Loading data for operator %s" % operator)
+                LOGGER.info("- Loading data for operator %s", operator)
                 try:
                     operator_activity_data = QueryGenerator(
                         site=self.get_mediawiki_api().get_site(),
@@ -267,7 +267,7 @@ class BotStatusTask(Task):
                     ).request.submit()
                 except Exception as e:
                     # TODO: make better error handling
-                    print(e, file=sys.stderr)
+                    LOGGER.error("Failed to load operator data", excinfo=True)
 
                     continue
 
@@ -326,12 +326,12 @@ class BotStatusTask(Task):
         for user in api.get_site().allusers(group="bot"):
             delay = create_delay(5)
             username = user["name"]
-            print("Loading data for bot", username)
+            LOGGER.info("Loading data for bot %s", username)
             try:
                 data = self.get_bot_data(username)
             except Exception as e:
                 # TODO: make better error handling
-                print(e, file=sys.stderr)
+                LOGGER.error("Failed to load bot data for %s", username, excinfo=True)
 
                 data = BotStatusData.new_for_unknown(username)
 

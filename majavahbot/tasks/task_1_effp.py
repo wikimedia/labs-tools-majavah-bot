@@ -1,4 +1,5 @@
 import datetime
+import logging
 from re import compile, search, sub
 
 from dateutil import parser
@@ -8,6 +9,8 @@ from majavahbot.api import MediawikiApi
 from majavahbot.api.manual_run import confirm_edit
 from majavahbot.config import effpr_config_page
 from majavahbot.tasks import Task, task_registry
+
+LOGGER = logging.getLogger(__name__)
 
 
 class EffpTask(Task):
@@ -239,7 +242,7 @@ class EffpTask(Task):
         return "Bot clerking: " + ", ".join(summary)
 
     def process_page(self, page: str, api: MediawikiApi):
-        print("Processing page %s" % page)
+        LOGGER.info("Processing page %s", page)
 
         """Processes the EFFPR page"""
         page = api.get_page(page)
@@ -254,7 +257,9 @@ class EffpTask(Task):
 
         if len(old_sections) > len(current_sections):
             # assuming something was just archived or un-done, not doing anything
-            print("Assuming something was just archived or un-done, not doing anything")
+            LOGGER.warning(
+                "Assuming something was just archived or un-done, not doing anything"
+            )
             return
 
         save = False
@@ -269,7 +274,7 @@ class EffpTask(Task):
             section_text = current_sections[i][1]
 
             if not self.is_closed(section_text):
-                print("Processing section by", section_user)
+                LOGGER.info("Processing section by %s", section_user)
 
                 new_text = section_text
                 new_summaries = []
@@ -284,18 +289,18 @@ class EffpTask(Task):
                 if self.should_archive(new_text, api):
                     archived_sections.append(new_text)
                     archive_section_titles.append(section_user)
-                    print("Will archive open section", section_user)
+                    LOGGER.info("Will archive open section %s", section_user)
                     save = True
                 elif new_text != section_text:
                     section_texts.append(new_text)
-                    print("Modified open section", section_user)
+                    LOGGER.info("Modified open section %s", section_user)
                     summaries[section_user] = new_summaries + existing_summaries
                     save = True
                 else:
-                    print("Didn't modify open section", section_user)
+                    LOGGER.info("Didn't modify open section %s", section_user)
                     section_texts.append(new_text)
             elif self.should_archive(section_text, api):
-                print("Will archive closed section", section_user)
+                LOGGER.info("Will archive closed section %s", section_user)
                 archived_sections.append(section_text)
                 archive_section_titles.append(section_user)
                 save = True
@@ -304,11 +309,13 @@ class EffpTask(Task):
 
         if save:
             if self.is_manual_run and (not confirm_edit()):
-                print("Not saving!")
+                LOGGER.warning("Not saving!")
                 return
 
             if len(archived_sections) > 0:
-                print("Saving archived sections, len =", len(archived_sections))
+                LOGGER.info(
+                    "Saving archived sections, len = %s", len(archived_sections)
+                )
                 self.add_to_archive_page(
                     self.get_task_configuration("rolling_archive_page_name"),
                     self.get_task_configuration("rolling_archive_max_sections"),
@@ -318,16 +325,18 @@ class EffpTask(Task):
 
             write_page_name = self.get_task_configuration("page_to_write_reports")
             if isinstance(write_page_name, str) and write_page_name != "":
-                print("Writing to page ", write_page_name, "instead of reports page")
+                LOGGER.warning(
+                    "Writing to page %s instead of reports page", write_page_name
+                )
                 page = api.get_page(write_page_name)
 
             summary = self.create_edit_summary(archive_section_titles, summaries)
-            print("Saving, edit summary =", summary)
+            LOGGER.info("Saving, edit summary = %s", summary)
             new_text = current_preface + "".join(section_texts)
             page.text = new_text
             page.save(summary, minor=False, botflag=self.should_use_bot_flag())
         else:
-            print("Not saving. save =", save)
+            LOGGER.warning("Not saving.")
 
     def add_to_archive_page(
         self,
@@ -356,7 +365,7 @@ class EffpTask(Task):
     def run(self):
         api = self.get_mediawiki_api()
 
-        print("Processing page once")
+        LOGGER.info("Processing page once")
         self.process_page(self.get_task_configuration("reports_page"), api)
 
         if self.is_manual_run:
@@ -368,10 +377,10 @@ class EffpTask(Task):
                 self.get_task_configuration("reports_page")
             )
         except:
-            print("Can't subscribe to EFFPR report page")
+            LOGGER.error("Can't subscribe to EFFPR report page")
             return
 
-        print("Now listening for EFFPR edits")
+        LOGGER.info("Now listening for EFFPR edits")
         for change in self.stream:
             if (
                 "!nobot!" in change["comment"]
@@ -381,7 +390,8 @@ class EffpTask(Task):
             ):
                 continue
             self.process_page(self.get_task_configuration("reports_page"), api)
-        print("EventStream dried")  # auto restart?
+
+        LOGGER.error("EventStream dried")  # auto restart?
 
     def task_configuration_reloaded(self, old, new):
         if "reports_page" in old and old["reports_page"] != new["reports_page"]:
@@ -421,13 +431,11 @@ class EffpTask(Task):
         last_reply_seconds = (
             datetime.datetime.now(tz=datetime.timezone.utc) - last_reply
         ).total_seconds()
-        print(
-            "Archive seconds_to_wait %s, last reply was %s, archive: %s"
-            % (
-                str(seconds_to_wait),
-                str(last_reply_seconds),
-                last_reply_seconds > seconds_to_wait,
-            )
+        LOGGER.info(
+            "Archive seconds_to_wait %s, last reply was %s, archive: %s",
+            seconds_to_wait,
+            last_reply_seconds,
+            last_reply_seconds > seconds_to_wait,
         )
         return last_reply_seconds > seconds_to_wait
 

@@ -1,4 +1,5 @@
 import datetime
+import logging
 import re
 import traceback
 from functools import lru_cache
@@ -10,6 +11,8 @@ from pywikibot.exceptions import PageRelatedError
 from majavahbot.api.database import ReplicaDatabase
 from majavahbot.api.manual_run import confirm_edit
 from majavahbot.tasks import Task, task_registry
+
+LOGGER = logging.getLogger(__name__)
 
 MOVED_REGEX = re.compile(
     r"(?:[a-zA-Z0-9 .]+ )?moved (?:page )?\[\[([^]]+)]] to \[\[([^]]+)]]"
@@ -90,7 +93,7 @@ class DykEntryTalkTask(Task):
         try:
             return self.get_mediawiki_api().get_page(archive_page_name).get()
         except PageRelatedError:
-            print("Failed getting for page", year, month)
+            LOGGER.info("Failed getting page for %s %s", year, month)
             traceback.print_exc()
             return ""
 
@@ -122,8 +125,6 @@ class DykEntryTalkTask(Task):
         ):
             search_entries.append("'''[[" + incoming_redirect.title().lower())
 
-        print(search_entries)
-
         archive_text = self.get_archive_page(year, month)
 
         for row in str(archive_text).split("\n"):
@@ -152,10 +153,8 @@ class DykEntryTalkTask(Task):
             ) and (not template.has("entry") or len(template.get("entry").value) == 0):
                 if year is None:
                     if (not template.has(1)) or (not template.has(2)):
-                        print("Skipping {{DYK talk}} page", page, ", no date found")
                         continue
 
-                    print("*", page.title(), template.get(2), template.get(1))
                     year = template.get(2).value.strip()
                     day, month = template.get(1).value.strip().split(" ")
 
@@ -163,7 +162,6 @@ class DykEntryTalkTask(Task):
                     entry = self.get_entry_for_page(year, month, day, page)
 
                 if entry:
-                    print("Adding entry", entry, "to {{DYK talk}}")
                     template.add("entry", entry)
             elif (
                 template.name.matches("ArticleHistory")
@@ -173,14 +171,12 @@ class DykEntryTalkTask(Task):
             ):
                 if year is None:
                     if not template.has("dykdate"):
-                        print(
-                            "Skipping {{ArticleHistory}} on page",
+                        LOGGER.info(
+                            "Skipping {{ArticleHistory}} on page %s, no date found",
                             page,
-                            ", no date found",
                         )
                         continue
                     date = template.get("dykdate").value.strip()
-                    print("*", page.title(), date)
 
                     if " " in date:
                         # monthName YYYY
@@ -191,20 +187,20 @@ class DykEntryTalkTask(Task):
                         year, month, day = date.split("-")[:3]
                         month = datetime.date(1900, int(month), 1).strftime("%B")
                     else:
-                        print(
-                            "Skipping {{ArticleHistory}} on page",
+                        LOGGER.info(
+                            "Skipping {{ArticleHistory}} on page %s, can't parse date %s",
                             page,
-                            ", can't parse date",
                             date,
                         )
                         continue
-                print(page.title(), year, month, day)
 
                 if entry is None:
                     entry = self.get_entry_for_page(year, month, day, page)
 
                 if entry:
-                    print("Adding entry", entry, "to {{ArticleHistory}}")
+                    LOGGER.info(
+                        "Adding entry %s to {{ArticleHistory}} on %s", entry, page
+                    )
                     template.add("dykentry", entry, before="dykdate")
 
         if entry:
@@ -227,7 +223,7 @@ class DykEntryTalkTask(Task):
         )
 
         if self.get_task_configuration("missing_blurb_enable") is not True:
-            print("Disabled in configuration")
+            LOGGER.error("Disabled in configuration")
             return
 
         api = self.get_mediawiki_api()
@@ -237,11 +233,11 @@ class DykEntryTalkTask(Task):
 
         replag = replicadb.get_replag()
         if replag > 10:
-            print("Replag is over 10 seconds, not processing! (" + str(replag) + ")")
+            LOGGER.error("Replag is over 10 seconds, not processing! (%s)", replag)
             return
 
         results = replicadb.get_all(QUERY)
-        print("-- Got %s pages" % (str(len(results))))
+        LOGGER.info("-- Got %s pages", len(results))
         for page_from_db in results:
             page_id = page_from_db["page_id"]
             page_name = page_from_db["page_title"].decode("utf-8")

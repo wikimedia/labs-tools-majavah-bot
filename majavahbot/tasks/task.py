@@ -26,8 +26,6 @@ class Task:
         self.task_configuration_page = None
         self.task_configuration_last_loaded = None
 
-        self.trial = None
-
     def __repr__(self):
         return "Task(number=" + str(self.number) + ",name=" + self.name + ")"
 

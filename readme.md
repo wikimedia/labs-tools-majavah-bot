@@ -31,8 +31,6 @@ To get started, copy the sample file over and modify any values that need modify
 The `cli.py` file can be used to run the bot. Use `python cli.py --help` to retrieve a list of all subcommands
 and `python cli.py {subcommand} --help` to get help related to that specific subcommand.
 
-You might need to do some database fiddling directly to modify approval/trial status of a task.
-
 ## Architecture
 
 The source code lives on `majavahbot/`. It is divided on three parts:
