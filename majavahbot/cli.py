@@ -31,7 +31,7 @@ def cli_whoami():
 def cli_task_list():
     for task in task_registry.get_tasks():
         LOGGER.info(
-            "Task %i (%s) on wiki %s.%s", task.number, task.name, task.site, task.family
+            "Task %s (%s) on wiki %s.%s", task.id, task.name, task.site, task.family
         )
 
 
@@ -45,9 +45,9 @@ def cli_check_replica(name: str):
 
 
 def cli_task(
-    number: int, run: bool, manual: bool, config: bool, job_name="cronjob", param=""
+    id: str, run: bool, manual: bool, config: bool, job_name="cronjob", param=""
 ):
-    task = task_registry.get_task_by_number(number)
+    task = task_registry.get_task_by_id(id)
     if task is None:
         LOGGER.error("Task not found")
         exit(1)
@@ -55,15 +55,15 @@ def cli_task(
     task.param = param
 
     if config:
-        LOGGER.info("Task configuration for task", task.number)
+        LOGGER.info("Task configuration for task %s", task.id)
         LOGGER.info(task.get_task_configuration())
         exit(0)
 
     if run:
-        LOGGER.info("Starting task", task.number)
+        LOGGER.info("Starting task %s", task.id)
         task.run()
     elif manual:
-        LOGGER.info("Manually running task", task.number)
+        LOGGER.info("Manually running task %s", task.id)
         task.do_manual_run()
     else:
         LOGGER.error("Unknown action")
@@ -85,7 +85,7 @@ def main():
     )
 
     task_parser = subparsers.add_parser("task")
-    task_parser.add_argument("number", metavar="number", help="Task number", type=int)
+    task_parser.add_argument("id", help="Task ID")
     task_parser.add_argument(
         "--run",
         dest="run",

@@ -9,8 +9,8 @@ from majavahbot.api.utils import remove_comments
 
 
 class Task:
-    def __init__(self, number, name, site, family):
-        self.number = number
+    def __init__(self, id, name, site, family):
+        self.id = str(id)
         self.name = name
         self.site = site
         self.family = family
@@ -27,7 +27,7 @@ class Task:
         self.task_configuration_last_loaded = None
 
     def __repr__(self):
-        return "Task(number=" + str(self.number) + ",name=" + self.name + ")"
+        return "Task(id=" + self.id + ",name=" + self.name + ")"
 
     def run(self):
         raise Exception("Not implemented yet")
@@ -102,12 +102,12 @@ class TaskRegistry:
 
     def get_tasks(self):
         tasks = list(self.tasks)
-        tasks.sort(key=(lambda task: task.number))
+        tasks.sort(key=(lambda task: task.id))
         return tasks
 
-    def get_task_by_number(self, number: int) -> Optional[Task]:
+    def get_task_by_id(self, id: str) -> Optional[Task]:
         for task in self.get_tasks():
-            if task.number == number:
+            if task.id == id:
                 return task
         return None
 
@@ -116,7 +116,7 @@ class TaskRegistry:
             lambda task: (task.family == family and task.site == lang), self.tasks
         )
         tasks = list(tasks)
-        tasks.sort(key=(lambda task: task.number))
+        tasks.sort(key=(lambda task: task.id))
         return tasks
 
     def add_all_tasks(self):
