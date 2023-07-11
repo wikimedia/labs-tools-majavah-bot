@@ -39,10 +39,8 @@ The source code lives on `majavahbot/`. It is divided on three parts:
 
 * `majavahbot/api/` contains a framework that the rest of the bot uses.
 * `majavahbot/tasks/` contains the individual tasks that the bot can run.
-* `majavahbot/web/` contains code for the [web interface](https://majavah-bot.toolforge.org)
 
-There is also `cli.py`, which handles the command-line interface for running the bot and
-`app.py` which starts the web interface.
+There is also `cli.py`, which handles the command-line interface for running the bot.
 
 ## LICENSE
 

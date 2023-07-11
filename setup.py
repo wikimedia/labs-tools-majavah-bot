@@ -11,7 +11,6 @@ setup(
     description="A Wikimedia editing bot",
     install_requires=[
         "dateparser",
-        "flask",
         "mwparserfromhell",
         "pymysql",
         "pywikibot",
