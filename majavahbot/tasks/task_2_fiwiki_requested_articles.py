@@ -63,7 +63,7 @@ class FiwikiRequestedArticlesTask(Task):
 
         return False
 
-    def process_page(self, page: str, api: MediawikiApi, replica: ReplicaDatabase):
+    def process_page(self, page_name: str, api: MediawikiApi, replica: ReplicaDatabase):
         page = api.get_page(page)
         text = page.text
         entries = list(ENTRY_REGEX.finditer(text))

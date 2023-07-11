@@ -53,5 +53,8 @@ def create_delay(seconds) -> Delay:
 
 def was_enough_time_ago(time_text: str, seconds: int) -> bool:
     parsed_time = dateparser.parse(time_text)
+    if not parsed_time:
+        return False
+
     diff = datetime.datetime.now(tz=datetime.timezone.utc) - parsed_time
     return diff.total_seconds() > seconds

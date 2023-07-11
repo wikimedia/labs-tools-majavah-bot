@@ -1,9 +1,10 @@
 import re
+from typing import Dict
 
 import dateparser
-import pywikibot
-from pywikibot.comms.eventstreams import EventStreams, site_rc_listener
-from pywikibot.data import api
+import pywikibot  # type: ignore
+from pywikibot.comms.eventstreams import EventStreams, site_rc_listener  # type: ignore
+from pywikibot.data import api  # type: ignore
 
 SIGNATURE_TIME_REGEX = re.compile(r"\d\d:\d\d, \d{1,2} \w*? \d\d\d\d \(UTC\)")
 
@@ -60,21 +61,27 @@ class MediawikiApi:
             return None
 
         last_hit = response[0]
-        last_hit_timestamp = last_hit["timestamp"]
-        last_hit_datetime = dateparser.parse(last_hit_timestamp)
 
         matching_hits = [last_hit]
+
+        last_hit_timestamp = last_hit["timestamp"]
+        last_hit_datetime = dateparser.parse(last_hit_timestamp)
+        if not last_hit_datetime:
+            return matching_hits
 
         for hit in response[1:]:
             hit_datetime = dateparser.parse(hit["timestamp"])
 
+            if not hit_datetime:
+                continue
+
             if (last_hit_datetime - hit_datetime).total_seconds() > 5:
                 # not the same action, if it took more than five seconds
-                pass
+                continue
 
             if hit["title"] != last_hit["title"]:
                 # not the same page, not caused by the same action
-                pass
+                continue
 
             matching_hits.append(hit)
 
@@ -83,8 +90,7 @@ class MediawikiApi:
     def get_last_reply(self, section: str):
         # example: 22:25, 11 September 2019 (UTC)
         date_strings = SIGNATURE_TIME_REGEX.findall(section)
-        dates = list(map(dateparser.parse, date_strings))
-        dates = sorted(dates)
+        dates = sorted([dateparser.parse(date) for date in date_strings])
         return dates[-1] if len(dates) > 0 else None
 
     def get_wikidata_id(self, page: pywikibot.Page):
@@ -106,7 +112,7 @@ class MediawikiApi:
         return first.lower().replace("_", " ") == second.lower().replace("_", " ")
 
 
-mediawiki_apis = {}
+mediawiki_apis: Dict[str, Dict[str, MediawikiApi]] = {}
 
 
 def get_mediawiki_api(site="en", family="wikipedia") -> MediawikiApi:

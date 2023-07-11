@@ -13,7 +13,7 @@ class BaseDatabase:
         self.database = None
 
     def get_connection(self) -> pymysql.Connection:
-        raise NotImplemented()
+        raise NotImplemented
 
     def request(self):
         if self.open < 1 or self.database is None:

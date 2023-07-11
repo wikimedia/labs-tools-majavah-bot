@@ -3,7 +3,7 @@ import sys
 from datetime import datetime
 from typing import List, Optional
 
-import mwparserfromhell
+import mwparserfromhell  # type: ignore
 from pywikibot.data.api import QueryGenerator
 
 from majavahbot.api.consts import HUMAN_DATE_FORMAT, MEDIAWIKI_DATE_FORMAT

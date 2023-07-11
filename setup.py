@@ -18,4 +18,5 @@ setup(
         "requests",
         "toolforge",
     ],
+    package_data={"majavahbot": ["py.typed"]},
 )

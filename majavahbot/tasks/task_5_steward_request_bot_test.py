@@ -1,5 +1,5 @@
-import mwparserfromhell
-import pytest as pytest
+import mwparserfromhell  # type: ignore
+import pytest
 
 from majavahbot.tasks.task_5_steward_request_bot import add_archived_sections, is_closed
 

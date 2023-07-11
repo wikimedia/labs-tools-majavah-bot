@@ -5,8 +5,8 @@ from datetime import datetime, timezone
 from tokenize import Comment
 from typing import Dict, List
 
-import mwparserfromhell
-from mwparserfromhell.wikicode import Wikicode
+import mwparserfromhell  # type: ignore
+from mwparserfromhell.wikicode import Wikicode  # type: ignore
 from pywikibot.data.api import QueryGenerator
 
 from majavahbot.api.manual_run import confirm_edit

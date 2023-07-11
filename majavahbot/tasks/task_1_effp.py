@@ -241,8 +241,8 @@ class EffpTask(Task):
 
         return "Bot clerking: " + ", ".join(summary)
 
-    def process_page(self, page: str, api: MediawikiApi):
-        LOGGER.info("Processing page %s", page)
+    def process_page(self, page_name: str, api: MediawikiApi):
+        LOGGER.info("Processing page %s", page_name)
 
         """Processes the EFFPR page"""
         page = api.get_page(page)

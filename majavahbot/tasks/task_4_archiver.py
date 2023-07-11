@@ -1,6 +1,6 @@
 import logging
 
-import pywikibot
+import pywikibot  # type: ignore
 
 from majavahbot.api import ReplicaDatabase
 from majavahbot.api.manual_run import confirm_edit
