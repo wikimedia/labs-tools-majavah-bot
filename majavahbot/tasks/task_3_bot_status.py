@@ -270,7 +270,7 @@ class BotStatusTask(Task):
                     ).request.submit()
                 except Exception as e:
                     # TODO: make better error handling
-                    LOGGER.error("Failed to load operator data", excinfo=True)
+                    LOGGER.error("Failed to load operator data", exc_info=e)
 
                     continue
 
@@ -334,7 +334,7 @@ class BotStatusTask(Task):
                 data = self.get_bot_data(username)
             except Exception as e:
                 # TODO: make better error handling
-                LOGGER.error("Failed to load bot data for %s", username, excinfo=True)
+                LOGGER.error("Failed to load bot data for %s", username, exc_info=e)
 
                 data = BotStatusData.new_for_unknown(username)
 
