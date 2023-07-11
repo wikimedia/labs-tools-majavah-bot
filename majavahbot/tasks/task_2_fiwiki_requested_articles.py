@@ -107,7 +107,7 @@ class FiwikiRequestedArticlesTask(Task):
                 new_text = new_text.replace(existing_page_entry, "")
                 removed_entries.append(existing_page)
 
-        if len(removed_entries) > 0 and self.should_edit():
+        if len(removed_entries) > 0:
             removed_length = len(removed_entries)
             if text == new_text:
                 raise RuntimeError(
@@ -127,14 +127,9 @@ class FiwikiRequestedArticlesTask(Task):
                 "Removing %s requests from page %s"
                 % (str(removed_length), page.title(as_link=True))
             )
-            if (
-                self.should_edit()
-                and not self.is_manual_run
-                or manual_run.confirm_edit()
-            ):
+            if not self.is_manual_run or manual_run.confirm_edit():
                 page.text = new_text
                 page.save(summary, botflag=self.should_use_bot_flag())
-                self.record_trial_edit()
 
     def run(self):
         api = self.get_mediawiki_api()

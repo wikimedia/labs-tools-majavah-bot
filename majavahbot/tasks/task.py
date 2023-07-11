@@ -4,7 +4,7 @@ from datetime import datetime
 from importlib import import_module
 from typing import Optional
 
-from majavahbot.api import MediawikiApi, TaskDatabase, get_mediawiki_api
+from majavahbot.api import MediawikiApi, get_mediawiki_api
 from majavahbot.api.utils import remove_comments
 
 
@@ -28,16 +28,6 @@ class Task:
 
         self.trial = None
 
-    @property
-    def approved(self):
-        db = TaskDatabase()
-        db.insert_task(self.number, self.name)
-        return db.is_approved(self.number)
-
-    def refresh_trial_data(self):
-        db = TaskDatabase()
-        self.trial = db.get_trial(self.number)
-
     def __repr__(self):
         return "Task(number=" + str(self.number) + ",name=" + self.name + ")"
 
@@ -53,34 +43,7 @@ class Task:
         raise Exception("This task does not support manual runs")
 
     def should_use_bot_flag(self):
-        return self.approved
-
-    def should_edit(self):
-        if self.trial is not None:
-            if (
-                self.trial["max_edits"]
-                and self.trial["edits_done"] >= self.trial["max_edits"]
-            ):
-                self.trial = None
-                print("DEBUG: Trial was completed; max edit count reached")
-                return False
-            if self.trial["max_days"] >= 0 and (
-                datetime.now() - self.trial["created_at"]
-            ).total_seconds() > (self.trial["max_days"] * 86400):
-                self.trial = None
-                print("DEBUG: Trial was completed; time ran out")
-                return False
-            return True
-
-        return self.approved
-
-    def record_trial_edit(self):
-        if self.trial is None:
-            return
-
-        self.trial["edits_done"] += 1
-        db = TaskDatabase()
-        db.record_trial_edit(self.trial["id"])
+        return True
 
     def get_mediawiki_api(self) -> MediawikiApi:
         return get_mediawiki_api(self.site, self.family)

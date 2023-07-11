@@ -1,15 +1,11 @@
 import argparse
 from sys import exit
 
-from majavahbot.api import ReplicaDatabase, TaskDatabase, get_mediawiki_api
+from majavahbot.api import ReplicaDatabase, get_mediawiki_api
 from majavahbot.api.consts import JOB_STATUS_DONE, JOB_STATUS_FAIL
 from majavahbot.tasks import task_registry
 
-task_database = TaskDatabase()
-task_database.request()
-task_database.init()
 task_registry.add_all_tasks()
-task_database.close()
 
 
 def str2bool(v):
@@ -70,28 +66,9 @@ def cli_task(
         print(task.get_task_configuration())
         exit(0)
 
-    if not task.should_edit():
-        print("Task is not approved")
-        exit(1)
-
     if run:
         print("Starting task", task.number)
-
-        if task.is_continuous:
-            task.run()
-        else:
-            job_id = task_database.start_job(
-                job_name, task.number, task.get_mediawiki_api().get_site().dbName()
-            )
-            try:
-                task.run()
-                task_database.stop_job(job_id, JOB_STATUS_DONE)
-            except Exception as e:
-                task_database.stop_job(job_id, JOB_STATUS_FAIL)
-                raise e
-            except KeyboardInterrupt as e:
-                task_database.stop_job(job_id, JOB_STATUS_FAIL)
-                raise e
+        task.run()
     elif manual:
         print("Manually running task", task.number)
         task.do_manual_run()

@@ -84,11 +84,7 @@ class AchieverBot(Task):
 
             print("Tagging page ", page.title())
             new_text = self.get_task_configuration("autosetup_tag") + "\n\n" + page_text
-            if (
-                new_text != page_text
-                and self.should_edit()
-                and (not self.is_manual_run or confirm_edit())
-            ):
+            if new_text != page_text and (not self.is_manual_run or confirm_edit()):
                 api.site.login()
                 page.text = new_text
                 page.save(
@@ -97,7 +93,6 @@ class AchieverBot(Task):
                     minor=False,
                     botflag=self.should_use_bot_flag(),
                 )
-                self.record_trial_edit()
 
 
 task_registry.add_task(AchieverBot(4, "Archive utility", "sq", "wikipedia"))

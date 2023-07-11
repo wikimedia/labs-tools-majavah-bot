@@ -209,11 +209,7 @@ class DykEntryTalkTask(Task):
 
         if entry:
             new_text = str(parsed)
-            if (
-                new_text != page.text
-                and self.should_edit()
-                and (not self.is_manual_run or confirm_edit())
-            ):
+            if new_text != page.text and (not self.is_manual_run or confirm_edit()):
                 self.get_mediawiki_api().get_site().login()
                 page.text = str(parsed)
 
@@ -221,7 +217,6 @@ class DykEntryTalkTask(Task):
                     self.get_task_configuration("missing_blurb_edit_summary"),
                     botflag=self.should_use_bot_flag(),
                 )
-                self.record_trial_edit()
                 return True
         return False
 
@@ -248,10 +243,6 @@ class DykEntryTalkTask(Task):
         results = replicadb.get_all(QUERY)
         print("-- Got %s pages" % (str(len(results))))
         for page_from_db in results:
-            if not self.should_edit():
-                print("Can't edit anymore, done")
-                break
-
             page_id = page_from_db["page_id"]
             page_name = page_from_db["page_title"].decode("utf-8")
 

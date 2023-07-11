@@ -259,10 +259,8 @@ class StewardRequestTask(Task):
         new_text = str(parsed)
         new_text = remove_empty_lines_before_replies(new_text)
 
-        if (
-            new_text != request_original_text
-            and self.should_edit()
-            and (not self.is_manual_run or confirm_edit())
+        if new_text != request_original_text and (
+            not self.is_manual_run or confirm_edit()
         ):
             api.site.login()
 
@@ -295,7 +293,6 @@ class StewardRequestTask(Task):
                 self.get_task_configuration("summary"),
                 botflag=self.should_use_bot_flag(),
             )
-            self.record_trial_edit()
 
     def run(self):
         self.merge_task_configuration(

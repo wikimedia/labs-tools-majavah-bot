@@ -3,5 +3,3 @@ requested_articles_config_page = (
     "Käyttäjä:MajavahBot/Asetukset/Artikkelitoiveiden siivoaja"
 )
 steward_request_bot_config_page = "User:MajavahBot/Steward Request Helper Configuration"
-
-own_db_database = "s54198__majavahbot"

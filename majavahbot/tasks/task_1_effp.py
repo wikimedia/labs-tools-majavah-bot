@@ -239,10 +239,6 @@ class EffpTask(Task):
         return "Bot clerking: " + ", ".join(summary)
 
     def process_page(self, page: str, api: MediawikiApi):
-        if not self.should_edit():
-            print("Should not edit; will not process page")
-            return
-
         print("Processing page %s" % page)
 
         """Processes the EFFPR page"""
@@ -306,7 +302,7 @@ class EffpTask(Task):
             else:
                 section_texts.append(section_text)
 
-        if save and self.should_edit():
+        if save:
             if self.is_manual_run and (not confirm_edit()):
                 print("Not saving!")
                 return
@@ -330,7 +326,6 @@ class EffpTask(Task):
             new_text = current_preface + "".join(section_texts)
             page.text = new_text
             page.save(summary, minor=False, botflag=self.should_use_bot_flag())
-            self.record_trial_edit()
         else:
             print("Not saving. save =", save)
 
@@ -357,7 +352,6 @@ class EffpTask(Task):
         summary = "Add %s archived sections (task 1e)" % len(new_sections)
         archive_page.text = header + "".join(section_texts)
         archive_page.save(summary, minor=False, botflag=self.should_use_bot_flag())
-        self.record_trial_edit()
 
     def run(self):
         api = self.get_mediawiki_api()
