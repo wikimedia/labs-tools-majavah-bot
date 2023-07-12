@@ -245,7 +245,7 @@ class EffpTask(Task):
         LOGGER.info("Processing page %s", page_name)
 
         """Processes the EFFPR page"""
-        page = api.get_page(page)
+        page = api.get_page(page_name)
         page.get(force=True)
 
         rev_iterator = page.revisions(content=True, total=2)
