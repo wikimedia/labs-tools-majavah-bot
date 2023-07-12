@@ -7,7 +7,6 @@ from pywikibot.exceptions import InvalidTitleError
 
 from majavahbot.api import MediawikiApi
 from majavahbot.api.manual_run import confirm_edit
-from majavahbot.config import effpr_config_page
 from majavahbot.tasks import Task, task_registry
 
 LOGGER = logging.getLogger(__name__)
@@ -30,7 +29,7 @@ class EffpTask(Task):
         self.is_continuous = True
         self.supports_manual_run = True
         self.stream = None
-        self.register_task_configuration(effpr_config_page)
+        self.register_task_configuration("User:MajavahBot/EFFP Helper Configuration")
 
     def locate_page_name(self, section):
         """Used to locate page name from a section"""

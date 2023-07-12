@@ -4,7 +4,7 @@ import re
 import traceback
 from functools import lru_cache
 
-import mwparserfromhell  # type: ignore
+import mwparserfromhell
 from pywikibot import Page
 from pywikibot.exceptions import PageRelatedError
 

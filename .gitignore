@@ -8,9 +8,6 @@ apicache-py3/
 replica.my.cnf
 /.tox
 
-# ignore actual config
-/majavahbot/config.py
-
 # ignore local testing script
 test.py
 temp/

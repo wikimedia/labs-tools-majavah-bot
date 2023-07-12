@@ -1,9 +1,8 @@
 import logging
-import sys
 from datetime import datetime
 from typing import List, Optional
 
-import mwparserfromhell  # type: ignore
+import mwparserfromhell
 from pywikibot.data.api import QueryGenerator
 
 from majavahbot.api.consts import HUMAN_DATE_FORMAT, MEDIAWIKI_DATE_FORMAT

@@ -4,7 +4,6 @@ from re import compile
 from pywikibot import Page
 
 from majavahbot.api import MediawikiApi, ReplicaDatabase, get_mediawiki_api, manual_run
-from majavahbot.config import requested_articles_config_page
 from majavahbot.tasks import Task, task_registry
 
 LOGGER = logging.getLogger(__name__)
@@ -26,7 +25,9 @@ AND EXISTS (SELECT fp_page_id FROM flaggedpages WHERE fp_page_id = page.page_id 
 class FiwikiRequestedArticlesTask(Task):
     def __init__(self, number, name, site, family):
         super().__init__(number, name, site, family)
-        self.register_task_configuration(requested_articles_config_page)
+        self.register_task_configuration(
+            "Käyttäjä:MajavahBot/Asetukset/Artikkelitoiveiden siivoaja"
+        )
         self.supports_manual_run = True
 
     def compare_wikidata_qs(self, page: Page, api: MediawikiApi, other_links: list):
@@ -64,7 +65,7 @@ class FiwikiRequestedArticlesTask(Task):
         return False
 
     def process_page(self, page_name: str, api: MediawikiApi, replica: ReplicaDatabase):
-        page = api.get_page(page)
+        page = api.get_page(page_name)
         text = page.text
         entries = list(ENTRY_REGEX.finditer(text))
         requests = {}

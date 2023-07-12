@@ -3,7 +3,6 @@ import logging
 from sys import exit
 
 from majavahbot.api import ReplicaDatabase, get_mediawiki_api
-from majavahbot.api.consts import JOB_STATUS_DONE, JOB_STATUS_FAIL
 from majavahbot.tasks import task_registry
 
 task_registry.add_all_tasks()

@@ -2,9 +2,9 @@ import re
 from typing import Dict
 
 import dateparser
-import pywikibot  # type: ignore
-from pywikibot.comms.eventstreams import EventStreams, site_rc_listener  # type: ignore
-from pywikibot.data import api  # type: ignore
+import pywikibot
+from pywikibot.comms.eventstreams import EventStreams, site_rc_listener
+from pywikibot.data import api
 
 SIGNATURE_TIME_REGEX = re.compile(r"\d\d:\d\d, \d{1,2} \w*? \d\d\d\d \(UTC\)")
 
@@ -90,7 +90,7 @@ class MediawikiApi:
     def get_last_reply(self, section: str):
         # example: 22:25, 11 September 2019 (UTC)
         date_strings = SIGNATURE_TIME_REGEX.findall(section)
-        dates = sorted([dateparser.parse(date) for date in date_strings])
+        dates = sorted([dateparser.parse(date) for date in date_strings])  # type: ignore
         return dates[-1] if len(dates) > 0 else None
 
     def get_wikidata_id(self, page: pywikibot.Page):

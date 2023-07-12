@@ -1,10 +1,7 @@
 from contextlib import contextmanager
-from datetime import datetime
 
 import pymysql
 import toolforge
-
-from majavahbot.api.consts import JOB_STATUS_RUNNING
 
 
 class BaseDatabase:
@@ -13,7 +10,7 @@ class BaseDatabase:
         self.database = None
 
     def get_connection(self) -> pymysql.Connection:
-        raise NotImplemented
+        raise NotImplementedError()
 
     def request(self):
         if self.open < 1 or self.database is None:

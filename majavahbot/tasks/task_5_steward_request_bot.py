@@ -2,17 +2,15 @@ import collections
 import ipaddress
 import logging
 from datetime import datetime, timezone
-from tokenize import Comment
 from typing import Dict, List
 
-import mwparserfromhell  # type: ignore
-from mwparserfromhell.wikicode import Wikicode  # type: ignore
+import mwparserfromhell
+from mwparserfromhell.wikicode import Wikicode
 from pywikibot.data.api import QueryGenerator
 
 from majavahbot.api.manual_run import confirm_edit
 from majavahbot.api.mediawiki import MediawikiApi
 from majavahbot.api.utils import remove_empty_lines_before_replies, was_enough_time_ago
-from majavahbot.config import steward_request_bot_config_page
 from majavahbot.tasks import Task, task_registry
 
 LOGGER = logging.getLogger(__name__)
@@ -35,8 +33,8 @@ def add_archived_sections(
             tls.append("\n" + "\n".join(add_sections[tls_header_text]) + "\n")
             del add_sections[tls_header_text]
 
-    for title, data in add_sections.items():
-        data = "\n".join(data)
+    for title, section in add_sections.items():
+        data = "\n".join(section)
         parsed.append(f"\n== {title} ==\n{data}\n")
 
     return str(parsed)
@@ -73,7 +71,9 @@ def is_closed(section: Wikicode, custom_templates: List[str]):
 class StewardRequestTask(Task):
     def __init__(self, number, name, site, family):
         super().__init__(number, name, site, family)
-        self.register_task_configuration(steward_request_bot_config_page)
+        self.register_task_configuration(
+            "User:MajavahBot/Steward Request Helper Configuration"
+        )
         self.supports_manual_run = True
 
     def get_steward_who_gblocked_ip(self, api: MediawikiApi, ip_or_range):
