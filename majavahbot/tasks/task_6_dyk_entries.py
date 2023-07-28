@@ -81,6 +81,13 @@ for name in ["hms", "hmas", "hmt", "sms", "ss", "usat", "uss"]:
     ] = (r"[[" + name + r" \g<1> (\g<2>)]]")
 
 
+ARTICLE_HISTORY_PARAMS = {
+    "dykdate": "dykentry",
+    "dyk1date": "dyk1entry",
+    "dyk2date": "dyk2entry",
+}
+
+
 class DykEntryTalkTask(Task):
     def __init__(self, number, name, site, family):
         super().__init__(number, name, site, family)
@@ -154,85 +161,80 @@ class DykEntryTalkTask(Task):
         page_text = page.get(force=True)
         parsed = mwparserfromhell.parse(page_text)
 
-        year = None
-        month = None
-        day = None
-        entry = None
+        save = False
 
         for template in parsed.filter_templates():
             if (
-                template.name.matches("Dyktalk") or template.name.matches("DYK talk")
-            ) and (
-                not template.has("entry")
-                or len(template.get("entry").value.strip()) == 0
+                (template.name.matches("Dyktalk") or template.name.matches("DYK talk"))
+                and (
+                    not template.has("entry")
+                    or len(template.get("entry").value.strip()) == 0
+                )
+                and (template.has(1) and template.has(2))
             ):
-                if year is None:
-                    if (not template.has(1)) or (not template.has(2)):
-                        continue
-
-                    year = template.get(2).value.strip()
-                    day, month = template.get(1).value.strip().split(" ")
-
-                if entry is None:
-                    entry = self.get_entry_for_page(year, month, day, page)
+                year = template.get(2).value.strip()
+                day, month = template.get(1).value.strip().split(" ")
+                entry = self.get_entry_for_page(year, month, day, page)
 
                 if entry:
+                    LOGGER.info("Adding entry %s to {{DYK talk}} on %s", entry, page)
                     template.add("entry", entry)
+                    save = True
             elif template.name.matches("ArticleHistory") or template.name.matches(
                 "Article history"
             ):
-                if year is None:
-                    if template.has("dykdate"):
-                        param_date = "dykdate"
-                        param_entry = "dykentry"
-                    elif template.has("dyk1date"):
-                        param_date = "dyk1date"
-                        param_entry = "dyk1entry"
-                    else:
-                        LOGGER.info(
-                            "Skipping {{ArticleHistory}} on page %s, no date found",
-                            page,
-                        )
+                param_date = None
+                param_entry = None
+                for p_date, p_entry in ARTICLE_HISTORY_PARAMS.items():
+                    if not template.has(p_date):
                         continue
-
                     if (
-                        template.has(param_entry)
-                        and len(template.get(param_entry).value.strip()) > 0
+                        template.has(p_entry)
+                        and len(template.get(p_entry).value.strip()) > 0
                     ):
-                        LOGGER.info(
-                            "Skipping {{ArticleHistory}} on page %s, already filled out",
-                            page,
-                        )
                         continue
 
-                    date = template.get(param_date).value.strip()
+                    param_date, param_entry = p_date, p_entry
 
-                    if " " in date:
-                        # monthName YYYY
-                        if date.count(" ") == 1:
-                            date = "1 " + date
-                        day, month, year = date.split(" ")[:3]
-                    elif "-" in date:
-                        year, month, day = date.split("-")[:3]
-                        month = datetime.date(1900, int(month), 1).strftime("%B")
-                    else:
-                        LOGGER.info(
-                            "Skipping {{ArticleHistory}} on page %s, can't parse date %s",
-                            page,
-                            date,
-                        )
-                        continue
+                if not param_date:
+                    LOGGER.info(
+                        "Skipping {{ArticleHistory}} on page %s, no missing entries found",
+                        page,
+                    )
+                    continue
 
-                if entry is None:
-                    entry = self.get_entry_for_page(year, month, day, page)
+                date = template.get(param_date).value.strip()
+
+                if " " in date:
+                    # monthName YYYY
+                    if date.count(" ") == 1:
+                        date = "1 " + date
+                    day, month, year = date.split(" ")[:3]
+                elif "-" in date:
+                    year, month, day = date.split("-")[:3]
+                    month = datetime.date(1900, int(month), 1).strftime("%B")
+                else:
+                    LOGGER.info(
+                        "Skipping {{ArticleHistory|%s=}} on page %s, can't parse date %s",
+                        param_date,
+                        page,
+                        date,
+                    )
+                    continue
+
+                entry = self.get_entry_for_page(year, month, day, page)
 
                 if entry:
                     LOGGER.info(
-                        "Adding entry %s to {{ArticleHistory}} on %s", entry, page
+                        "Adding entry %s to {{ArticleHistory|%s=}} on %s",
+                        entry,
+                        param_date,
+                        page,
                     )
                     template.add(param_entry, entry, before=param_date)
+                    save = True
 
-        if entry:
+        if save:
             new_text = str(parsed)
             if new_text != page.text and (not self.is_manual_run or confirm_edit()):
                 self.get_mediawiki_api().get_site().login()
