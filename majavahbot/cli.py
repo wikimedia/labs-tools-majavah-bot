@@ -2,6 +2,8 @@ import argparse
 import logging
 from sys import exit
 
+import toolforge
+
 from majavahbot.api import ReplicaDatabase, get_mediawiki_api
 from majavahbot.tasks import task_registry
 
@@ -71,6 +73,8 @@ def cli_task(
 
 def main():
     logging.basicConfig(level=logging.INFO)
+
+    toolforge.set_user_agent("majavah-bot")
 
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="subparser", required=True)
