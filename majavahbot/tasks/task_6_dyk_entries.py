@@ -66,7 +66,7 @@ NAME_REPLACEMENTS = {
         r"{{(?:ship|warship)\|([a-zA-Z0-9\- ]+)\|([a-zA-Z0-9\- ]+)\|([a-zA-Z0-9\- ]+)}}"
     ): r"[[\g<1> \g<2> (\g<3>)]]",
     re.compile(
-        r"{{sclass\|([a-zA-Z0-9\- ]+)\|([a-zA-Z0-9\- ]+)}}"
+        r"{{sclass\|([a-zA-Z0-9\- ]+)\|([a-zA-Z0-9\- ]+)(?:\|\d)?}}"
     ): r"[[\g<1> class \g<2>]]",
 }
 
