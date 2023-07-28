@@ -114,16 +114,17 @@ class DykEntryTalkTask(Task):
         main_page = page.toggleTalkPage()
         search_entries = ["'''[[" + main_page.title().lower()]
 
-        for revision in main_page.revisions():
-            result = MOVED_REGEX.match(revision.comment)
-            if result is not None:
-                old_name = result.group(1)
-                old_page = self.get_mediawiki_api().get_page(old_name)
-                search_entries.append("'''[[" + old_page.title().lower())
-        for incoming_redirect in main_page.backlinks(
-            filter_redirects=True, follow_redirects=False, namespaces=[0]
-        ):
-            search_entries.append("'''[[" + incoming_redirect.title().lower())
+        if main_page.exists():
+            for revision in main_page.revisions():
+                result = MOVED_REGEX.match(revision.comment)
+                if result is not None:
+                    old_name = result.group(1)
+                    old_page = self.get_mediawiki_api().get_page(old_name)
+                    search_entries.append("'''[[" + old_page.title().lower())
+            for incoming_redirect in main_page.backlinks(
+                filter_redirects=True, follow_redirects=False, namespaces=[0]
+            ):
+                search_entries.append("'''[[" + incoming_redirect.title().lower())
 
         archive_text = self.get_archive_page(year, month)
         if archive_text == "":
