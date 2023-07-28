@@ -156,7 +156,10 @@ class DykEntryTalkTask(Task):
         for template in parsed.filter_templates():
             if (
                 template.name.matches("Dyktalk") or template.name.matches("DYK talk")
-            ) and (not template.has("entry") or len(template.get("entry").value) == 0):
+            ) and (
+                not template.has("entry")
+                or len(template.get("entry").value.strip()) == 0
+            ):
                 if year is None:
                     if (not template.has(1)) or (not template.has(2)):
                         continue
@@ -188,7 +191,7 @@ class DykEntryTalkTask(Task):
 
                     if (
                         template.has(param_entry)
-                        and len(template.get(param_entry).value) > 0
+                        and len(template.get(param_entry).value.strip()) > 0
                     ):
                         LOGGER.info(
                             "Skipping {{ArticleHistory}} on page %s, already filled out",
