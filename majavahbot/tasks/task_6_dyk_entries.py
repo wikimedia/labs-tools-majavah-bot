@@ -126,6 +126,11 @@ class DykEntryTalkTask(Task):
             search_entries.append("'''[[" + incoming_redirect.title().lower())
 
         archive_text = self.get_archive_page(year, month)
+        if archive_text == "":
+            LOGGER.warning(
+                "Could not load archive page (%s, %s) for %s", year, month, page
+            )
+            return False
 
         for row in str(archive_text).split("\n"):
             row_to_search = row.lower()
