@@ -168,20 +168,34 @@ class DykEntryTalkTask(Task):
 
                 if entry:
                     template.add("entry", entry)
-            elif (
-                template.name.matches("ArticleHistory")
-                or template.name.matches("Article history")
-            ) and (
-                not template.has("dykentry") or len(template.get("dykentry").value) == 0
+            elif template.name.matches("ArticleHistory") or template.name.matches(
+                "Article history"
             ):
                 if year is None:
-                    if not template.has("dykdate"):
+                    if template.has("dykdate"):
+                        param_date = "dykdate"
+                        param_entry = "dykentry"
+                    elif template.has("dyk1date"):
+                        param_date = "dyk1date"
+                        param_entry = "dyk1entry"
+                    else:
                         LOGGER.info(
                             "Skipping {{ArticleHistory}} on page %s, no date found",
                             page,
                         )
                         continue
-                    date = template.get("dykdate").value.strip()
+
+                    if (
+                        template.has(param_entry)
+                        and len(template.get(param_entry).value) > 0
+                    ):
+                        LOGGER.info(
+                            "Skipping {{ArticleHistory}} on page %s, already filled out",
+                            page,
+                        )
+                        continue
+
+                    date = template.get(param_date).value.strip()
 
                     if " " in date:
                         # monthName YYYY
@@ -206,7 +220,7 @@ class DykEntryTalkTask(Task):
                     LOGGER.info(
                         "Adding entry %s to {{ArticleHistory}} on %s", entry, page
                     )
-                    template.add("dykentry", entry, before="dykdate")
+                    template.add(param_entry, entry, before=param_date)
 
         if entry:
             new_text = str(parsed)
