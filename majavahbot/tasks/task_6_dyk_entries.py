@@ -87,6 +87,8 @@ ARTICLE_HISTORY_PARAMS = {
     "dyk2date": "dyk2entry",
 }
 
+DATE_STARTS_WITH_TIME_RE = re.compile(r"\d\d:\d\d, (.+)")
+
 
 class DykEntryTalkTask(Task):
     def __init__(self, number, name, site, family):
@@ -204,6 +206,7 @@ class DykEntryTalkTask(Task):
                     continue
 
                 date = template.get(param_date).value.strip()
+                date = DATE_STARTS_WITH_TIME_RE.sub(r"\g<1>", date)
 
                 if " " in date:
                     # monthName YYYY
