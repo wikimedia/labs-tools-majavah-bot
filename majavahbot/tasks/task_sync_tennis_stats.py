@@ -32,6 +32,20 @@ class Ranking:
     tied: bool
 
 
+def remap_country(
+    name: str, country: Optional[str], overrides: Dict[str, Dict[str, Any]]
+) -> str:
+    # Turn 'Bar, Foo' into 'Foo Bar'
+    overrides_key = " ".join(name.split(", ", 1)[::-1])
+    if overrides_key in overrides and "country" in overrides[overrides_key]:
+        return overrides[overrides_key]["country"]
+
+    if not country:
+        return ""
+
+    return country.lstrip(" (").rstrip(")")
+
+
 class SyncTennisStatsTask(Task):
     def __init__(self, number, name, site, family):
         super().__init__(number, name, site, family)
@@ -39,18 +53,13 @@ class SyncTennisStatsTask(Task):
         self.merge_task_configuration(
             enable=True,
             summary="Bot: Updating rankings data",
+            overrides_page="Module:ATP rankings/data/overrides.json",
             singles_result="Module:ATP rankings/data/singles.json",
         )
 
-    def remap_country(self, name: str, country: Optional[str]) -> str:
-        # TODO: do something for Russia etc where the official stats don't have a country
-
-        if not country:
-            return ""
-
-        return country.lstrip(" (").rstrip(")")
-
-    def download_and_parse(self, url: str) -> Tuple[List[Ranking], Optional[str]]:
+    def download_and_parse(
+        self, url: str, overrides: Dict[str, Dict[str, Any]]
+    ) -> Tuple[List[Ranking], Optional[str]]:
         f = None
         try:
             with NamedTemporaryFile(delete=False) as f:
@@ -84,8 +93,8 @@ class SyncTennisStatsTask(Task):
                 players.append(
                     Ranking(
                         name=match.group("name"),
-                        country=self.remap_country(
-                            match.group("name"), match.group("country")
+                        country=remap_country(
+                            match.group("name"), match.group("country"), overrides
                         ),
                         rank=int(match.group("rank")),
                         tied=match.group("tied").strip() != "",
@@ -95,8 +104,10 @@ class SyncTennisStatsTask(Task):
 
         return players, update_date
 
-    def process_pdf(self, url: str, target_page: str):
-        players, update_date = self.download_and_parse(url)
+    def process_pdf(
+        self, url: str, target_page: str, overrides: Dict[str, Dict[str, Any]]
+    ):
+        players, update_date = self.download_and_parse(url, overrides)
         LOGGER.info("Formatting rankings for the required on-wiki format")
 
         per_country: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
@@ -148,7 +159,15 @@ class SyncTennisStatsTask(Task):
             LOGGER.error("Disabled in configuration")
             return
 
-        self.process_pdf(SINGLES_PDF_URL, self.get_task_configuration("singles_result"))
+        overrides = json.loads(
+            self.get_mediawiki_api()
+            .get_page(self.get_task_configuration("overrides_page"))
+            .get()
+        )
+
+        self.process_pdf(
+            SINGLES_PDF_URL, self.get_task_configuration("singles_result"), overrides
+        )
 
 
 task_registry.add_task(
