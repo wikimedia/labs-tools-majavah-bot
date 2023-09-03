@@ -1,4 +1,5 @@
 import argparse
+import json
 import logging
 from sys import exit
 
@@ -11,17 +12,6 @@ task_registry.add_all_tasks()
 
 
 LOGGER = logging.getLogger(__name__)
-
-
-def str2bool(v):
-    if isinstance(v, bool):
-        return v
-    if v.lower() in ("yes", "true", "t", "y", "1"):
-        return True
-    elif v.lower() in ("no", "false", "f", "n", "0"):
-        return False
-    else:
-        raise argparse.ArgumentTypeError("Boolean value expected.")
 
 
 def cli_whoami():
@@ -45,10 +35,8 @@ def cli_check_replica(name: str):
     )
 
 
-def cli_task(
-    id: str, run: bool, manual: bool, config: bool, job_name="cronjob", param=""
-):
-    task = task_registry.get_task_by_id(id)
+def cli_task(task_id: str, run: bool, manual: bool, config: bool, param=""):
+    task = task_registry.get_task_by_id(task_id)
     if task is None:
         LOGGER.error("Task not found")
         exit(1)
@@ -57,7 +45,7 @@ def cli_task(
 
     if config:
         LOGGER.info("Task configuration for task %s", task.id)
-        LOGGER.info(task.get_task_configuration())
+        LOGGER.info(json.dumps(task.get_task_configuration()))
         exit(0)
 
     if run:
@@ -88,47 +76,31 @@ def main():
     )
 
     task_parser = subparsers.add_parser("task")
-    task_parser.add_argument("id", help="Task ID")
+    task_parser.add_argument("task_id", help="Task ID")
     task_parser.add_argument(
         "--run",
         dest="run",
-        type=str2bool,
-        nargs="?",
-        const=True,
+        action="store_true",
         default=False,
         help="Run the task",
     )
     task_parser.add_argument(
         "--manual",
         dest="manual",
-        type=str2bool,
-        nargs="?",
-        const=True,
+        action="store_true",
         default=False,
         help="Manually runs the task",
     )
     task_parser.add_argument(
         "--config",
         dest="config",
-        type=str2bool,
-        nargs="?",
-        const=True,
+        action="store_true",
         default=False,
         help="Shows the task configuration",
     )
     task_parser.add_argument(
-        "--job-name",
-        dest="job_name",
-        type=str,
-        nargs="?",
-        default="cronjob",
-        help="Job name to record to database",
-    )
-    task_parser.add_argument(
         "--param",
         dest="param",
-        type=str,
-        nargs="?",
         default="",
         help="Additional param passed to the job",
     )
