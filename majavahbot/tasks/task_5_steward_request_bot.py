@@ -269,11 +269,12 @@ class StewardRequestTask(Task):
 
             if len(to_archive.keys()) > 0:
                 now = datetime.now()
+                now_iso = now.isocalendar()
                 archive_page_name = archive_format.format(
                     page=page,
-                    year=now.year,
+                    year=now_iso.year,
                     month=str(now.month).zfill(2),
-                    week=now.strftime("%U"),
+                    week=now_iso.week,
                 )
 
                 archive_page = api.get_page(archive_page_name)
