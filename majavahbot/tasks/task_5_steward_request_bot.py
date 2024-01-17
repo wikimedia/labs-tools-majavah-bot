@@ -106,6 +106,9 @@ class StewardRequestTask(Task):
         entry = data[0]
         params = entry["params"]
 
+        if params["action"] == "delete":
+            return None
+
         if "added" in params:
             if "locked" not in params["added"]:
                 return None
