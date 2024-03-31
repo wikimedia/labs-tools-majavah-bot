@@ -148,11 +148,13 @@ class BotStatusData:
                 "Partially blocked" if self.block_data["partial"] else "Blocked",
                 self.block_data["by"],
                 self.format_date(date, sortkey=False),
-                "to expire at {}".format(
-                    self.format_date(self.block_data["expiry"], sortkey=False)
-                )
-                if self.block_data["expiry"] != "infinite"
-                else "",
+                (
+                    "to expire at {}".format(
+                        self.format_date(self.block_data["expiry"], sortkey=False)
+                    )
+                    if self.block_data["expiry"] != "infinite"
+                    else ""
+                ),
                 self.format_block_reason(),
             )
         )
