@@ -90,7 +90,8 @@ class MediawikiApi:
     def get_last_reply(self, section: str):
         # example: 22:25, 11 September 2019 (UTC)
         date_strings = SIGNATURE_TIME_REGEX.findall(section)
-        dates = sorted([dateparser.parse(date) for date in date_strings])  # type: ignore
+        maybe_dates = [dateparser.parse(date) for date in date_strings]
+        dates = sorted([date for date in maybe_dates if date is not None])
         return dates[-1] if len(dates) > 0 else None
 
     def get_wikidata_id(self, page: pywikibot.Page):
