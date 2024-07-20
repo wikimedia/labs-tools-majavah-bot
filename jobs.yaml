@@ -54,3 +54,8 @@
   image: python3.9
   name: sync-tennis-stats
   schedule: 08 20 * * 1
+
+- name: logrotate
+  command: timeout 1h logrotate -v $TOOL_DATA_DIR/www/python/src/logrotate.conf --state $TOOL_DATA_DIR/logrotate.state
+  image: mariadb
+  schedule: "@daily"
