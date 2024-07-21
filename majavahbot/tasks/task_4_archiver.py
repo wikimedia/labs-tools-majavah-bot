@@ -17,7 +17,7 @@ select
 from page
 where
     page_namespace in ({namespaces})
-    and page_title not like '%/%'
+    and page_title not like '%%/%%'
     and page_len > 5000
     and page_is_redirect = 0
     and not exists (
@@ -71,7 +71,7 @@ class AchieverBot(Task):
             return
 
         namespaces = self.get_task_configuration("autosetup_namespaces")
-        namespace_placeholders = ",".join(["%s"] * len(namespaces))
+        namespace_placeholders = ", ".join(["%s"] * len(namespaces))
 
         results = replicadb.get_all(
             QUERY.format(namespaces=namespace_placeholders), tuple(namespaces)
