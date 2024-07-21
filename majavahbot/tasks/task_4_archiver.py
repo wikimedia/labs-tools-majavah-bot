@@ -23,9 +23,10 @@ where
     and not exists (
         select 1
         from templatelinks
+        left join linktarget on lt_id = tl_target_id
         where tl_from = page_id
-        and (tl_title = "MajavahBot/config" or tl_title = "MajavahBot/no-autotag")
-        and tl_namespace = 2
+        and lt_namespace = 2
+        and (lt_title = "MajavahBot/config" or lt_title = "MajavahBot/no-autotag")
     )
     and not exists (
         select 1
