@@ -2,56 +2,56 @@
   continuous: true
   filelog-stderr: logs/t1-enwiki.err
   filelog-stdout: logs/t1-enwiki.out
-  image: python3.9
+  image: python3.11
   name: t1-enwiki
 - command: timeout 3h /data/project/majavah-bot/tjf-entrypoint.sh task 2 --run
   filelog-stderr: logs/t2-fiwiki.err
   filelog-stdout: logs/t2-fiwiki.out
-  image: python3.9
+  image: python3.11
   name: t2-fiwiki
   schedule: 50 06 * * *
 - command: timeout 3h /data/project/majavah-bot/tjf-entrypoint.sh task 3 --run
   emails: all
   filelog-stderr: logs/t3-enwiki.err
   filelog-stdout: logs/t3-enwiki.out
-  image: python3.9
+  image: python3.11
   name: t3-enwiki
   schedule: 25 16 * * *
 - command: timeout 3h /data/project/majavah-bot/run-archivebot.sh q/sq
   filelog-stderr: logs/t4-sqquote.err
   filelog-stdout: logs/t4-sqquote.out
-  image: python3.9
+  image: python3.11
   name: t4-sqquote
   schedule: 16 03 * * *
 - command: timeout 3h /data/project/majavah-bot/run-archivebot.sh w/sq
   filelog-stderr: logs/t4-sqwiki.err
   filelog-stdout: logs/t4-sqwiki.out
-  image: python3.9
+  image: python3.11
   name: t4-sqwiki
   schedule: 16 04 * * *
 - command: timeout 3h /data/project/majavah-bot/tjf-entrypoint.sh task 4 --param autosetup --run
   filelog-stderr: logs/t4-sqwiki-autosetup.err
   filelog-stdout: logs/t4-sqwiki-autosetup.out
-  image: python3.9
+  image: python3.11
   name: t4-sqwiki-autosetup
   schedule: 16 02 * * *
 - command: timeout 25m /data/project/majavah-bot/tjf-entrypoint.sh task 5 --run
   emails: onfailure
   filelog-stderr: logs/t5-meta.err
   filelog-stdout: logs/t5-meta.out
-  image: python3.9
+  image: python3.11
   name: t5-meta
   schedule: 5,25,45 * * * *
 - command: timeout 3h /data/project/majavah-bot/tjf-entrypoint.sh task 7 --run
   filelog-stderr: logs/t7-meta.err
   filelog-stdout: logs/t7-meta.out
-  image: python3.9
+  image: python3.11
   name: t7-meta
   schedule: 57 17 * * *
 - command: timeout 3h /data/project/majavah-bot/tjf-entrypoint.sh task sync-tennis-stats --run
   filelog-stderr: logs/sync-tennis-stats.err
   filelog-stdout: logs/sync-tennis-stats.out
-  image: python3.9
+  image: python3.11
   name: sync-tennis-stats
   schedule: 08 20 * * 1
 
