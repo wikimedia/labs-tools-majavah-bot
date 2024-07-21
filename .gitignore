@@ -3,6 +3,7 @@ throttle.ctrl
 *.lwp
 venv/
 apicache-py3/
+apicache/
 /.idea
 *.pyc
 replica.my.cnf
