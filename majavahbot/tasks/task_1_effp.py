@@ -24,8 +24,8 @@ class EffpTask(Task):
      e) Archive
     """
 
-    def __init__(self, number, name, site, family):
-        super().__init__(number, name, site, family)
+    def __init__(self, task_id: str, name: str, site: str, family: str) -> None:
+        super().__init__(task_id, name, site, family)
         self.is_continuous = True
         self.supports_manual_run = True
         self.stream = None
@@ -439,4 +439,4 @@ class EffpTask(Task):
         return last_reply_seconds > seconds_to_wait
 
 
-task_registry.add_task(EffpTask(1, "EFFP helper", "en", "wikipedia"))
+task_registry.add_task(EffpTask("1", "EFFP helper", "en", "wikipedia"))

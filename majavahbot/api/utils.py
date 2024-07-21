@@ -34,20 +34,20 @@ def get_revision() -> str:
 
 
 class Delay:
-    def __init__(self, seconds):
+    def __init__(self, seconds: float) -> None:
         self.seconds = seconds
         self.started = time.time()
 
-    def get_remaining(self):
+    def get_remaining(self) -> float:
         return self.seconds - (time.time() - self.started)
 
-    def wait(self):
+    def wait(self) -> None:
         delay = self.get_remaining()
         if delay > 0:
             time.sleep(delay)
 
 
-def create_delay(seconds) -> Delay:
+def create_delay(seconds: float) -> Delay:
     return Delay(seconds)
 
 

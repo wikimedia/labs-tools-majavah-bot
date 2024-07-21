@@ -1,5 +1,5 @@
 import re
-from typing import Dict
+from typing import Any
 
 import dateparser
 import pywikibot
@@ -10,10 +10,10 @@ SIGNATURE_TIME_REGEX = re.compile(r"\d\d:\d\d, \d{1,2} \w*? \d\d\d\d \(UTC\)")
 
 
 class MediawikiApi:
-    def __init__(self, site, family):
+    def __init__(self, site: str, family: str) -> None:
         self.site = pywikibot.Site(site, family)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         self.site.login()
         return "MediawikiApi{wiki=%s,user=%s,has_bot_flag=%s}" % (
             self.site.hostname(),
@@ -21,7 +21,7 @@ class MediawikiApi:
             "bot" in self.site.userinfo["rights"],
         )
 
-    def test(self):
+    def test(self) -> bool:
         return pywikibot.User(self.site, self.site.username()).exists()
 
     def get_site(self) -> pywikibot.Site:
@@ -30,7 +30,7 @@ class MediawikiApi:
     def get_page(self, page_name: str) -> pywikibot.Page:
         return pywikibot.Page(self.site, page_name)
 
-    def get_user(self, user_name) -> pywikibot.User:
+    def get_user(self, user_name: str) -> pywikibot.User:
         return pywikibot.User(self.site, user_name)
 
     def get_page_change_stream(
@@ -44,7 +44,7 @@ class MediawikiApi:
 
         return stream
 
-    def get_last_filter_hits(self, user: str):
+    def get_last_filter_hits(self, user: str) -> list[dict[str, Any]]:
         """Retrieves latest Special:AbuseLog entries for specified user."""
         self.site.login()
         request = api.Request(
@@ -58,7 +58,7 @@ class MediawikiApi:
         )
         response = request.submit()["query"]["abuselog"]
         if len(response) == 0:
-            return None
+            return []
 
         last_hit = response[0]
 
@@ -94,7 +94,7 @@ class MediawikiApi:
         dates = sorted([date for date in maybe_dates if date is not None])
         return dates[-1] if len(dates) > 0 else None
 
-    def get_wikidata_id(self, page: pywikibot.Page):
+    def get_wikidata_id(self, page: pywikibot.Page) -> str | None:
         if not page.exists():
             return None
 
@@ -113,10 +113,10 @@ class MediawikiApi:
         return first.lower().replace("_", " ") == second.lower().replace("_", " ")
 
 
-mediawiki_apis: Dict[str, Dict[str, MediawikiApi]] = {}
+mediawiki_apis: dict[str, dict[str, MediawikiApi]] = {}
 
 
-def get_mediawiki_api(site="en", family="wikipedia") -> MediawikiApi:
+def get_mediawiki_api(site: str, family: str) -> MediawikiApi:
     if family not in mediawiki_apis:
         mediawiki_apis[family] = {}
     if site not in mediawiki_apis[family]:

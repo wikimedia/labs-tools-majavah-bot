@@ -41,8 +41,8 @@ limit 20;
 
 
 class AchieverBot(Task):
-    def __init__(self, number, name, site, family):
-        super().__init__(number, name, site, family)
+    def __init__(self, task_id: str, name: str, site: str, family: str) -> None:
+        super().__init__(task_id, name, site, family)
         self.supports_manual_run = True
         self.register_task_configuration("User:MajavahBot/Options")
 
@@ -100,4 +100,4 @@ class AchieverBot(Task):
                 )
 
 
-task_registry.add_task(AchieverBot(4, "Archive utility", "sq", "wikipedia"))
+task_registry.add_task(AchieverBot("4", "Archive utility", "sq", "wikipedia"))

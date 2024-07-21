@@ -142,4 +142,4 @@ class StewardStatsTask(Task):
         page.save("Update")
 
 
-task_registry.add_task(StewardStatsTask(7, "Steward statistics", "meta", "meta"))
+task_registry.add_task(StewardStatsTask("7", "Steward statistics", "meta", "meta"))
