@@ -62,7 +62,7 @@ def cli_task(task_id: str, run: bool, manual: bool, config: bool, param=""):
 def main():
     logging.basicConfig(
         level=logging.INFO,
-        format="%(asctime)s %(name)-32s %(levelname)-5s: %(message)s",
+        format="%(asctime)s %(name)-32s %(levelname)-8s: %(message)s",
     )
 
     toolforge.set_user_agent("majavah-bot")
