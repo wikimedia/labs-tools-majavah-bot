@@ -2,7 +2,7 @@ import collections
 import ipaddress
 import logging
 from datetime import datetime, timezone
-from typing import Dict, List
+from typing import Any, Dict, List, Optional
 
 import mwparserfromhell
 import pywikibot
@@ -77,7 +77,9 @@ class StewardRequestTask(Task):
         )
         self.supports_manual_run = True
 
-    def get_steward_who_gblocked_ip(self, api: MediawikiApi, ip_or_range):
+    def get_steward_who_gblocked_ip(
+        self, api: MediawikiApi, ip_or_range
+    ) -> Optional[str]:
         try:
             data = QueryGenerator(
                 site=api.get_site(),
@@ -99,21 +101,22 @@ class StewardRequestTask(Task):
 
         return data[0]["by"]
 
-    def get_steward_who_locked_account(self, api: MediawikiApi, account_name):
-        data = QueryGenerator(
-            site=api.get_site(),
-            list="logevents",
-            letype="globalauth",
-            letitle="User:" + account_name + "@global",
-        ).request.submit()["query"]["logevents"]
-
-        if len(data) == 0:
+    def _get_steward_who_blocked_account_global_block(
+        self, entry: Dict[str, Any]
+    ) -> Optional[str]:
+        if not was_enough_time_ago(
+            entry["timestamp"], self.get_task_configuration("mark_done_min_time")
+        ):
             return None
 
-        entry = data[0]
+        return entry["by"]
+
+    def _get_steward_who_blocked_account_lock(
+        self, entry: Dict[str, Any]
+    ) -> Optional[str]:
         params = entry["params"]
 
-        if entry["action"] == "delete":
+        if entry["action"] != "delete":
             return None
 
         if "added" in params:
@@ -129,7 +132,32 @@ class StewardRequestTask(Task):
         ):
             return None
 
-        return data[0]["user"]
+        return entry["user"]
+
+    def get_steward_who_blocked_account(
+        self, api: MediawikiApi, account_name
+    ) -> Optional[str]:
+        data = QueryGenerator(
+            site=api.get_site(),
+            list="globalblocks|logevents",
+            bgtargets=account_name,
+            letype="globalauth",
+            letitle="User:" + account_name + "@global",
+        ).request.submit()["query"]
+
+        if len(data["globalblocks"]) >= 1:
+            user = self._get_steward_who_blocked_account_global_block(
+                data["globalblocks"][0]
+            )
+            if user:
+                return user
+
+        if len(data["logevents"]) >= 1:
+            user = self._get_steward_who_blocked_account_lock(data["logevents"][0])
+            if user:
+                return user
+
+        return None
 
     def process_srp_section(self, api, section):
         header = section.filter_headings()[0]
@@ -201,7 +229,7 @@ class StewardRequestTask(Task):
                 awesome_people.add(steward)
 
         for account in accounts:
-            steward = self.get_steward_who_locked_account(api, account)
+            steward = self.get_steward_who_blocked_account(api, account)
             if steward is None:
                 mark_done = False
             else:
