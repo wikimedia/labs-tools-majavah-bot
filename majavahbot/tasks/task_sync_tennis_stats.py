@@ -102,12 +102,17 @@ class SyncTennisStatsTask(Task):
                     )
                 )
 
+        LOGGER.info("Got data for %s players on %s", len(players), update_date)
         return players, update_date
 
     def process_pdf(
         self, url: str, target_page: str, overrides: Dict[str, Dict[str, Any]]
     ):
         players, update_date = self.download_and_parse(url, overrides)
+
+        if len(players) < 100:
+            raise Exception("Got data for suspiciously few players!")
+
         LOGGER.info("Formatting rankings for the required on-wiki format")
 
         per_country: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
