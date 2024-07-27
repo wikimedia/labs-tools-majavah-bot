@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Dict, List
 
 import mwparserfromhell
+import pywikibot
 from mwparserfromhell.wikicode import Wikicode
 from pywikibot.data.api import QueryGenerator
 
@@ -77,11 +78,17 @@ class StewardRequestTask(Task):
         self.supports_manual_run = True
 
     def get_steward_who_gblocked_ip(self, api: MediawikiApi, ip_or_range):
-        data = QueryGenerator(
-            site=api.get_site(),
-            list="globalblocks",
-            bgip=ip_or_range,
-        ).request.submit()["query"]["globalblocks"]
+        try:
+            data = QueryGenerator(
+                site=api.get_site(),
+                list="globalblocks",
+                bgip=ip_or_range,
+            ).request.submit()["query"]["globalblocks"]
+        except pywikibot.exceptions.APIError as e:
+            if e.code == "cidrtoobroad":
+                return None
+            raise
+
         if len(data) == 0:
             return None
 
