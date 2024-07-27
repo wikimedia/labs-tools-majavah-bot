@@ -13,7 +13,7 @@ setup(
         "dateparser",
         "mwparserfromhell",
         "pymysql",
-        "pypdf",
+        "pypdf==4.2.0",
         "pywikibot",
         "sseclient",
         "requests",
