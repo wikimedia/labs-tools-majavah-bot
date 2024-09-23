@@ -116,7 +116,7 @@ class StewardRequestTask(Task):
     ) -> Optional[str]:
         params = entry["params"]
 
-        if entry["action"] != "delete":
+        if entry["action"] == "delete":
             return None
 
         if "added" in params:
