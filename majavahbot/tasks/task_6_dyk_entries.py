@@ -91,8 +91,8 @@ DATE_STARTS_WITH_TIME_RE = re.compile(r"\d\d:\d\d, (.+)")
 
 
 class DykEntryTalkTask(Task):
-    def __init__(self, number, name, site, family):
-        super().__init__(number, name, site, family)
+    def __init__(self, task_id: str, name: str, site: str, family: str) -> None:
+        super().__init__(task_id, name, site, family)
         self.supports_manual_run = True
         self.register_task_configuration("User:MajavahBot/DYK options")
 
@@ -282,4 +282,4 @@ class DykEntryTalkTask(Task):
             self.process_page(page)
 
 
-task_registry.add_task(DykEntryTalkTask(6, "DYK entry filler", "en", "wikipedia"))
+task_registry.add_task(DykEntryTalkTask("6", "DYK entry filler", "en", "wikipedia"))

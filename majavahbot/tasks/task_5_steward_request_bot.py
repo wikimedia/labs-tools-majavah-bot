@@ -20,7 +20,7 @@ OPEN_STATUSES = ("", "hold", "onhold", "on hold", "in progress", "inprogress")
 
 
 def add_archived_sections(
-    original_page: str, add_sections: Dict[str, List[str]]
+    original_page: str, add_sections: dict[str, list[str]]
 ) -> str:
     parsed = mwparserfromhell.parse(original_page)
     top_level_sections = parsed.get_sections(levels=[2])
@@ -41,7 +41,7 @@ def add_archived_sections(
     return str(parsed)
 
 
-def is_closed(section: Wikicode, custom_templates: List[str]):
+def is_closed(section: Wikicode, custom_templates: list[str]) -> bool:
     templates = [
         template
         for template in section.filter_templates()
@@ -70,16 +70,16 @@ def is_closed(section: Wikicode, custom_templates: List[str]):
 
 
 class StewardRequestTask(Task):
-    def __init__(self, number, name, site, family):
-        super().__init__(number, name, site, family)
+    def __init__(self, task_id: str, name: str, site: str, family: str) -> None:
+        super().__init__(task_id, name, site, family)
         self.register_task_configuration(
             "User:MajavahBot/Steward Request Helper Configuration"
         )
         self.supports_manual_run = True
 
     def get_steward_who_gblocked_ip(
-        self, api: MediawikiApi, ip_or_range
-    ) -> Optional[str]:
+        self, api: MediawikiApi, ip_or_range: str
+    ) -> str | None:
         try:
             data = QueryGenerator(
                 site=api.get_site(),
@@ -103,12 +103,11 @@ class StewardRequestTask(Task):
 
     def _get_steward_who_blocked_account_global_block(
         self, entry: Dict[str, Any]
-    ) -> Optional[str]:
+    ) -> str | None:
         if not was_enough_time_ago(
             entry["timestamp"], self.get_task_configuration("mark_done_min_time")
         ):
             return None
-
         return entry["by"]
 
     def _get_steward_who_blocked_account_lock(
@@ -135,8 +134,8 @@ class StewardRequestTask(Task):
         return entry["user"]
 
     def get_steward_who_blocked_account(
-        self, api: MediawikiApi, account_name
-    ) -> Optional[str]:
+        self, api: MediawikiApi, account_name: str
+    ) -> str | None:
         data = QueryGenerator(
             site=api.get_site(),
             list="globalblocks|logevents",
@@ -159,7 +158,7 @@ class StewardRequestTask(Task):
 
         return None
 
-    def process_srp_section(self, api, section):
+    def process_srp_section(self, api: MediawikiApi, section: Wikicode) -> bool:
         header = section.filter_headings()[0]
         if not header:
             return False  # ???
@@ -239,12 +238,14 @@ class StewardRequestTask(Task):
             return False
 
         # remove duplicates
-        awesome_people = ", ".join(sorted(awesome_people))
+        awesome_people_str = ", ".join(sorted(awesome_people))
 
         if mark_done:
             status.add(1, "done")
             section.append(
-                ": '''Robot clerk note:''' {{done}} by " + awesome_people + ". ~~~~\n"
+                ": '''Robot clerk note:''' {{done}} by "
+                + awesome_people_str
+                + ". ~~~~\n"
             )
 
         return False
@@ -257,8 +258,8 @@ class StewardRequestTask(Task):
         archive_format: str,
         archive_header: str,
         is_srg: bool,
-        custom_templates: List[str],
-    ):
+        custom_templates: list[str],
+    ) -> None:
         LOGGER.info("processing page %s", page)
         request_page = api.get_page(page)
         request_original_text = request_page.get(force=True)
@@ -273,7 +274,7 @@ class StewardRequestTask(Task):
 
             tls_header = tls.filter_headings()[0]
             if not tls_header:
-                return False
+                return
             tls_header_text = tls_header.title.strip()
 
             for section in sections:
@@ -336,7 +337,7 @@ class StewardRequestTask(Task):
                 botflag=self.should_use_bot_flag(),
             )
 
-    def run(self):
+    def run(self) -> None:
         self.merge_task_configuration(
             run=True,
             srg_page="Steward requests/Global",
@@ -405,4 +406,4 @@ class StewardRequestTask(Task):
             )
 
 
-task_registry.add_task(StewardRequestTask(5, "Steward request bot", "meta", "meta"))
+task_registry.add_task(StewardRequestTask("5", "Steward request bot", "meta", "meta"))

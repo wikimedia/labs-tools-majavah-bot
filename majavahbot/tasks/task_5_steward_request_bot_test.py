@@ -4,7 +4,7 @@ import pytest
 from majavahbot.tasks.task_5_steward_request_bot import add_archived_sections, is_closed
 
 
-def test_add_archived_sections():
+def test_add_archived_sections() -> None:
     assert (
         add_archived_sections(
             """== First ==
@@ -80,5 +80,5 @@ example
         ["{{status|closed}}", ["srgp"], False],
     ],
 )
-def test_is_closed(text, custom_templates, closed):
+def test_is_closed(text: str, custom_templates: list[str], closed: bool) -> None:
     assert is_closed(mwparserfromhell.parse(text), custom_templates) == closed

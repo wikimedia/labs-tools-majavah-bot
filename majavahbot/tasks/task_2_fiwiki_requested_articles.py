@@ -23,8 +23,8 @@ AND EXISTS (SELECT fp_page_id FROM flaggedpages WHERE fp_page_id = page.page_id 
 
 
 class FiwikiRequestedArticlesTask(Task):
-    def __init__(self, number, name, site, family):
-        super().__init__(number, name, site, family)
+    def __init__(self, task_id: str, name: str, site: str, family: str) -> None:
+        super().__init__(task_id, name, site, family)
         self.register_task_configuration(
             "Käyttäjä:MajavahBot/Asetukset/Artikkelitoiveiden siivoaja"
         )
@@ -157,5 +157,5 @@ class FiwikiRequestedArticlesTask(Task):
 
 
 task_registry.add_task(
-    FiwikiRequestedArticlesTask(2, "Requested articles clerk", "fi", "wikipedia")
+    FiwikiRequestedArticlesTask("2", "Requested articles clerk", "fi", "wikipedia")
 )

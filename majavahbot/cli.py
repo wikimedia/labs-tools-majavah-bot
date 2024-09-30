@@ -22,7 +22,11 @@ def cli_whoami():
 def cli_task_list():
     for task in task_registry.get_tasks():
         LOGGER.info(
-            "Task %s (%s) on wiki %s.%s", task.id, task.name, task.site, task.family
+            "Task %s (%s) on wiki %s.%s",
+            task.task_id,
+            task.name,
+            task.site,
+            task.family,
         )
 
 
@@ -44,15 +48,15 @@ def cli_task(task_id: str, run: bool, manual: bool, config: bool, param=""):
     task.param = param
 
     if config:
-        LOGGER.info("Task configuration for task %s", task.id)
+        LOGGER.info("Task configuration for task %s", task.task_id)
         LOGGER.info(json.dumps(task.get_task_configuration()))
         exit(0)
 
     if run:
-        LOGGER.info("Starting task %s", task.id)
+        LOGGER.info("Starting task %s", task.task_id)
         task.run()
     elif manual:
-        LOGGER.info("Manually running task %s", task.id)
+        LOGGER.info("Manually running task %s", task.task_id)
         task.do_manual_run()
     else:
         LOGGER.error("Unknown action")

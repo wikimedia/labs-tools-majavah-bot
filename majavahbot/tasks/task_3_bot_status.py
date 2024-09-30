@@ -188,9 +188,6 @@ class BotStatusData:
 
 
 class BotStatusTask(Task):
-    def __init__(self, number, name, site, family):
-        super().__init__(number, name, site, family)
-
     def get_bot_data(self, username):
         # get all data needed with one big query
         data = QueryGenerator(
@@ -350,4 +347,4 @@ class BotStatusTask(Task):
         page.save("Bot updating status report", botflag=self.should_use_bot_flag())
 
 
-task_registry.add_task(BotStatusTask(3, "Bot status report", "en", "wikipedia"))
+task_registry.add_task(BotStatusTask("3", "Bot status report", "en", "wikipedia"))

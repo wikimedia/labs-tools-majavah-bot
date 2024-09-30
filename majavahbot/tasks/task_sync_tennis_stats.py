@@ -47,8 +47,8 @@ def remap_country(
 
 
 class SyncTennisStatsTask(Task):
-    def __init__(self, number, name, site, family):
-        super().__init__(number, name, site, family)
+    def __init__(self, task_id: str, name: str, site: str, family: str) -> None:
+        super().__init__(task_id, name, site, family)
         self.register_task_configuration("User:MajavahBot/ATP rankings updater")
         self.merge_task_configuration(
             enable=True,

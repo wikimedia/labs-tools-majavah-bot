@@ -21,9 +21,9 @@ OVERRIDES = {
         [" (YES)", "YES"],
     ],
 )
-def test_remap_country_simple(country: str, expected: str):
+def test_remap_country_simple(country: str, expected: str) -> None:
     assert remap_country("Does Not Matter", country, {}) == expected
 
 
-def test_remap_country_override():
+def test_remap_country_override() -> None:
     assert remap_country("Baz, Foo", " (YES)", OVERRIDES) == "NO"
