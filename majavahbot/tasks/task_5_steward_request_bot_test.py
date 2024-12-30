@@ -1,7 +1,13 @@
+from datetime import datetime
+
 import mwparserfromhell
 import pytest
 
-from majavahbot.tasks.task_5_steward_request_bot import add_archived_sections, is_closed
+from majavahbot.tasks.task_5_steward_request_bot import (
+    add_archived_sections,
+    create_archive_page_name,
+    is_closed,
+)
 
 
 def test_add_archived_sections() -> None:
@@ -82,3 +88,14 @@ example
 )
 def test_is_closed(text: str, custom_templates: list[str], closed: bool) -> None:
     assert is_closed(mwparserfromhell.parse(text), custom_templates) == closed
+
+
+def test_create_archive_page_name():
+    assert (
+        create_archive_page_name(
+            template="{page}/{year}-{month}-{week}",
+            base="b@se",
+            time=datetime(year=2024, month=12, day=30),
+        )
+        == "b@se/2024-12-53"
+    )

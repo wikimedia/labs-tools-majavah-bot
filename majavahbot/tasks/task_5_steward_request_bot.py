@@ -69,6 +69,18 @@ def is_closed(section: Wikicode, custom_templates: list[str]) -> bool:
     )
 
 
+def create_archive_page_name(*, template: str, base: str, time: datetime) -> str:
+    year = str(time.year)
+    week = time.strftime("%W")
+
+    return template.format(
+        page=base,
+        year=year,
+        month=str(time.month).zfill(2),
+        week=week,
+    )
+
+
 class StewardRequestTask(Task):
     def __init__(self, task_id: str, name: str, site: str, family: str) -> None:
         super().__init__(task_id, name, site, family)
@@ -307,15 +319,9 @@ class StewardRequestTask(Task):
             api.site.login()
 
             if len(to_archive.keys()) > 0:
-                now = datetime.now()
-                now_iso = now.isocalendar()
-                archive_page_name = archive_format.format(
-                    page=page,
-                    year=now_iso.year,
-                    month=str(now.month).zfill(2),
-                    week=now_iso.week,
+                archive_page_name = create_archive_page_name(
+                    template=archive_format, base=page, time=datetime.now()
                 )
-
                 archive_page = api.get_page(archive_page_name)
                 if archive_page.exists():
                     archive_page_original_text = archive_page.get(force=True)
