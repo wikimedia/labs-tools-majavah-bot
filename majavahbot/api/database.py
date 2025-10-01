@@ -69,7 +69,7 @@ class ReplicaDatabase(BaseDatabase):
             self.db_name,
             cluster="analytics",
             charset="utf8",
-            cursorclass=pymysql.cursors.DictCursor,
+            cursorclass=pymysql.cursors.DictCursor,  # type: ignore
         )
 
     def get_replag(self):

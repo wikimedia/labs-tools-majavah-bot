@@ -207,8 +207,7 @@ class StewardRequestTask(Task):
                         # so CIDR ranges are checked if they are globally blocked instead of locked
                         if second.isdigit():
                             # since some people suggest blocking ranges larger than /16, don't crash
-                            second = int(second)
-                            if second > 16:
+                            if int(second) > 16:
                                 validate_text = first
 
                     try:
