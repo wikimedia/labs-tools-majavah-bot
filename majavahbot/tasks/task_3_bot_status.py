@@ -12,7 +12,14 @@ from majavahbot.tasks import Task, task_registry
 LOGGER = logging.getLogger(__name__)
 
 # Groups in this array will not be shown as additional user rights
-STANDARD_GROUPS = ["bot", "*", "user", "autoconfirmed", "extendedconfirmed"]
+STANDARD_GROUPS = [
+    "bot",
+    "*",
+    "user",
+    "autoconfirmed",
+    "extendedconfirmed",
+    "oathauth-twofactorauth",
+]
 
 PAGE_NAME = "User:MajavahBot/Bot status report"
 
