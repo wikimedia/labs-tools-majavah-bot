@@ -193,7 +193,7 @@ class BotStatusData:
                 details.append(self.blocks[0].format())
             else:
                 details.append(
-                    "\n".join([f"* {block.format()}" for block in self.blocks])
+                    "".join([f"\n* {block.format()}" for block in self.blocks])
                 )
 
         return "\n----\n".join(details)
