@@ -1,6 +1,7 @@
 import logging
+from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import mwparserfromhell
 from pywikibot.data.api import QueryGenerator
@@ -52,18 +53,81 @@ TABLE_ROW_FORMAT = """
 EMPTY_COLUMN = "{{center|—}}"
 
 
+def parse_date(string: str | None) -> datetime | None:
+    if string is None:
+        return None
+    return datetime.strptime(string, MEDIAWIKI_DATE_FORMAT)
+
+
+def format_date(date: datetime | None, sortkey: bool = True) -> str:
+    if date is None:
+        return EMPTY_COLUMN
+
+    if sortkey:
+        return 'class="nowrap" data-sort-value={} | {}'.format(
+            date.strftime(MEDIAWIKI_DATE_FORMAT), date.strftime(HUMAN_DATE_FORMAT)
+        )
+
+    return date.strftime(HUMAN_DATE_FORMAT)
+
+
+@dataclass
+class Block:
+    id: int
+    by: str
+    reason: str
+    at: str
+    expiry: str
+    partial: bool
+
+    def format(self) -> str:
+        return "%s by {{no ping|%s}} on %s%s.<br/>Block reason is '%s{{'}}" % (
+            "Partially blocked" if self.partial else "Blocked",
+            self.by,
+            format_date(parse_date(self.at), sortkey=False),
+            (
+                "to expire at {}".format(
+                    format_date(parse_date(self.expiry), sortkey=False)
+                )
+                if self.expiry != "infinite"
+                else ""
+            ),
+            self.format_reason(),
+        )
+
+    def format_reason(self) -> str:
+        return (
+            self.reason.replace("[[Category:", "[[:Category:")
+            .replace("[[category:", "[[:category:")
+            .replace("{", "&#123;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+        )
+
+    @classmethod
+    def parse(cls, data: dict[str, Any]) -> "Block":
+        return cls(
+            id=data["blockid"],
+            by=data["blockedby"],
+            reason=data["blockreason"],
+            at=data["blockedtimestamp"],
+            expiry=data["blockexpiry"],
+            partial=data.get("blockpartial", False) is not False,
+        )
+
+
 class BotStatusData:
     def __init__(
         self,
         *,
         name: str,
-        operators: List[str],
-        last_edit_timestamp: Optional[str],
-        last_log_timestamp: Optional[str],
-        last_operator_activity_timestamp: Optional[str],
-        edit_count: Optional[int],
-        groups: Optional[List[str]],
-        block_data: Optional[dict],
+        operators: list[str],
+        last_edit_timestamp: str | None,
+        last_log_timestamp: str | None,
+        last_operator_activity_timestamp: datetime | None,
+        edit_count: int | None,
+        groups: list[str],
+        blocks: list[Block],
     ):
         self.name = name
         self.operators = set(operators)
@@ -74,16 +138,16 @@ class BotStatusData:
         self.last_operator_activity_timestamp = None
 
         if last_edit_timestamp is not None:
-            self.last_edit_timestamp = self.parse_date(last_edit_timestamp)
+            self.last_edit_timestamp = parse_date(last_edit_timestamp)
             self.last_activity_timestamp = self.last_edit_timestamp
 
         if last_log_timestamp is not None:
-            self.last_log_timestamp = self.parse_date(last_log_timestamp)
+            self.last_log_timestamp = parse_date(last_log_timestamp)
             if self.last_edit_timestamp is None:
                 self.last_activity_timestamp = self.last_log_timestamp
             else:
                 self.last_activity_timestamp = max(
-                    self.last_log_timestamp, self.last_edit_timestamp
+                    self.last_log_timestamp, self.last_edit_timestamp  # type: ignore
                 )
 
         if last_operator_activity_timestamp:
@@ -96,7 +160,7 @@ class BotStatusData:
         else:
             self.groups = []
 
-        self.block_data = block_data
+        self.blocks = blocks
 
     @staticmethod
     def new_for_unknown(name: str) -> "BotStatusData":
@@ -107,8 +171,8 @@ class BotStatusData:
             last_log_timestamp=None,
             last_operator_activity_timestamp=None,
             edit_count=None,
-            groups=None,
-            block_data=None,
+            groups=[],
+            blocks=[],
         )
 
     def format_number(self, number: Optional[int], sortkey=True):
@@ -119,76 +183,34 @@ class BotStatusData:
             return 'class="nowrap" data-sort-value={} | {:,}'.format(number, number)
         return "{:,}".format(number)
 
-    def parse_date(self, string):
-        if string is None:
-            return None
-        return datetime.strptime(string, MEDIAWIKI_DATE_FORMAT)
-
-    def format_date(self, date, sortkey=True):
-        if date is None:
-            return EMPTY_COLUMN
-
-        if sortkey:
-            return 'class="nowrap" data-sort-value={} | {}'.format(
-                date.strftime(MEDIAWIKI_DATE_FORMAT), date.strftime(HUMAN_DATE_FORMAT)
-            )
-
-        return date.strftime(HUMAN_DATE_FORMAT)
-
-    def format_block_reason(self):
-        return (
-            self.block_data["reason"]
-            .replace("[[Category:", "[[:Category:")
-            .replace("[[category:", "[[:category:")
-            .replace("{", "&#123;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-        )
-
-    def format_block(self):
-        date = self.parse_date(self.block_data["at"])
-
-        return (
-            "data-sort-value=%s | %s by {{no ping|%s}} on %s%s.<br/>Block reason is '%s{{'}}"
-            % (
-                date.strftime(MEDIAWIKI_DATE_FORMAT),
-                "Partially blocked" if self.block_data["partial"] else "Blocked",
-                self.block_data["by"],
-                self.format_date(date, sortkey=False),
-                (
-                    "to expire at {}".format(
-                        self.format_date(self.block_data["expiry"], sortkey=False)
-                    )
-                    if self.block_data["expiry"] != "infinite"
-                    else ""
-                ),
-                self.format_block_reason(),
-            )
-        )
-
-    def format_extra_details(self):
+    def format_extra_details(self) -> str:
         details = []
 
         if len(self.groups) > 0:
             details.append("Extra groups: " + ", ".join(self.groups))
-        if self.block_data is not None:
-            details.append(self.format_block())
+        if self.blocks:
+            if len(self.blocks) == 1:
+                details.append(self.blocks[0].format())
+            else:
+                details.append(
+                    "\n".join([f"* {block.format()}" for block in self.blocks])
+                )
 
         return "\n----\n".join(details)
 
-    def to_table_row(self):
+    def to_table_row(self) -> str:
         return TABLE_ROW_FORMAT % (
             self.name,
             self.format_operators(),
             self.format_number(self.edit_count),
-            self.format_date(self.last_activity_timestamp),
-            self.format_date(self.last_edit_timestamp),
-            self.format_date(self.last_log_timestamp),
-            self.format_date(self.last_operator_activity_timestamp),
+            format_date(self.last_activity_timestamp),
+            format_date(self.last_edit_timestamp),
+            format_date(self.last_log_timestamp),
+            format_date(self.last_operator_activity_timestamp),
             self.format_extra_details(),
         )
 
-    def format_operators(self):
+    def format_operators(self) -> str:
         if len(self.operators) == 0:
             return EMPTY_COLUMN
         return "{{no ping|" + "}}, {{no ping|".join(sorted(self.operators)) + "}}"
@@ -224,16 +246,13 @@ class BotStatusTask(Task):
         if "query" in data:
             data = data["query"]
 
-            block = None
-            if "blockid" in data["users"][0]:
-                block = {
-                    "id": data["users"][0]["blockid"],
-                    "by": data["users"][0]["blockedby"],
-                    "reason": data["users"][0]["blockreason"],
-                    "at": data["users"][0]["blockedtimestamp"],
-                    "expiry": data["users"][0]["blockexpiry"],
-                    "partial": "blockpartial" in data["users"][0],
-                }
+            blocks = []
+            if "blockcomponents" in data["users"][0]:
+                blocks = [
+                    Block.parse(block) for block in data["users"][0]["blockcomponents"]
+                ]
+            elif "blockid" in data["users"][0]:
+                blocks.append(Block.parse(data["users"][0]))
 
             operators = []
             for page_id in data["pages"]:
@@ -322,7 +341,7 @@ class BotStatusTask(Task):
                 last_operator_activity_timestamp=operator_activity,
                 edit_count=data["users"][0]["editcount"],
                 groups=data["users"][0]["groups"],
-                block_data=block,
+                blocks=blocks,
             )
 
         raise Exception("Failed loading bot data for " + username + ": " + str(data))
