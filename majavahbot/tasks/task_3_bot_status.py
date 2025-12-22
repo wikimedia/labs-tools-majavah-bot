@@ -1,7 +1,7 @@
 import logging
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, List, Optional
+from typing import Any
 
 import mwparserfromhell
 from pywikibot.data.api import QueryGenerator
@@ -175,7 +175,7 @@ class BotStatusData:
             blocks=[],
         )
 
-    def format_number(self, number: Optional[int], sortkey=True):
+    def format_number(self, number: int | None, sortkey: bool = True) -> str:
         if not number:
             return EMPTY_COLUMN
 

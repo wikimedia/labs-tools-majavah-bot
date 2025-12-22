@@ -2,7 +2,7 @@ import collections
 import ipaddress
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import mwparserfromhell
 import pywikibot
@@ -114,7 +114,7 @@ class StewardRequestTask(Task):
         return data[0]["by"]
 
     def _get_steward_who_blocked_account_global_block(
-        self, entry: Dict[str, Any]
+        self, entry: dict[str, Any]
     ) -> str | None:
         if not was_enough_time_ago(
             entry["timestamp"], self.get_task_configuration("mark_done_min_time")
@@ -123,8 +123,8 @@ class StewardRequestTask(Task):
         return entry["by"]
 
     def _get_steward_who_blocked_account_lock(
-        self, entry: Dict[str, Any]
-    ) -> Optional[str]:
+        self, entry: dict[str, Any]
+    ) -> str | None:
         params = entry["params"]
 
         if entry["action"] == "delete":

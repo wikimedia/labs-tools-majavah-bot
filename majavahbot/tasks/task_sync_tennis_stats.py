@@ -5,7 +5,7 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass
 from tempfile import NamedTemporaryFile
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import pypdf
 import requests
@@ -33,7 +33,7 @@ class Ranking:
 
 
 def remap_country(
-    name: str, country: Optional[str], overrides: Dict[str, Dict[str, Any]]
+    name: str, country: str | None, overrides: dict[str, dict[str, Any]]
 ) -> str:
     # Turn 'Bar, Foo' into 'Foo Bar'
     overrides_key = " ".join(name.split(", ", 1)[::-1])
@@ -58,8 +58,8 @@ class SyncTennisStatsTask(Task):
         )
 
     def download_and_parse(
-        self, url: str, overrides: Dict[str, Dict[str, Any]]
-    ) -> Tuple[List[Ranking], Optional[str]]:
+        self, url: str, overrides: dict[str, dict[str, Any]]
+    ) -> tuple[list[Ranking], str | None]:
         f = None
         try:
             with NamedTemporaryFile(delete=False) as f:
@@ -76,7 +76,7 @@ class SyncTennisStatsTask(Task):
 
         LOGGER.info("Extracting ranking data")
         update_date = ""
-        players: List[Ranking] = []
+        players: list[Ranking] = []
 
         for page in parser.pages:
             text = page.extract_text()
@@ -106,7 +106,7 @@ class SyncTennisStatsTask(Task):
         return players, update_date
 
     def process_pdf(
-        self, url: str, target_page: str, overrides: Dict[str, Dict[str, Any]]
+        self, url: str, target_page: str, overrides: dict[str, dict[str, Any]]
     ):
         players, update_date = self.download_and_parse(url, overrides)
 
@@ -115,7 +115,7 @@ class SyncTennisStatsTask(Task):
 
         LOGGER.info("Formatting rankings for the required on-wiki format")
 
-        per_country: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+        per_country: dict[str, list[dict[str, Any]]] = defaultdict(list)
 
         for player in sorted(players, key=lambda p: p.rank):
             if player.country == "":
