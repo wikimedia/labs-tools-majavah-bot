@@ -1,6 +1,7 @@
 import datetime
 import logging
 from re import compile, search, sub
+from typing import Any, cast
 
 from dateutil import parser
 from pywikibot.exceptions import InvalidTitleError
@@ -28,10 +29,10 @@ class EffpTask(Task):
         super().__init__(task_id, name, site, family)
         self.is_continuous = True
         self.supports_manual_run = True
-        self.stream = None
+        self.stop = False
         self.register_task_configuration("User:MajavahBot/EFFP Helper Configuration")
 
-    def locate_page_name(self, section):
+    def locate_page_name(self, section: str) -> str | None:
         """Used to locate page name from a section"""
         results = search(self.get_task_configuration("page_title_regex"), section)
 
@@ -44,13 +45,15 @@ class EffpTask(Task):
             return None
         return page_name
 
-    def is_closed(self, section):
+    def is_closed(self, section: str) -> bool:
         return any(
             string.lower() in section.lower()
             for string in self.get_task_configuration("section_closed_strings")
         )
 
-    def process_new_report(self, section: str, user_name: str, api: MediawikiApi):
+    def process_new_report(
+        self, section: str, user_name: str, api: MediawikiApi
+    ) -> tuple[str, list[str]]:
         """Used to process a new section added to the page"""
         page_title = self.locate_page_name(section)
 
@@ -79,7 +82,7 @@ class EffpTask(Task):
                 new_section += ":{{EFFP|nofilterstriggered|bot=1}} ~~~~\n"
                 edit_summary.append("Notify that no filters were triggered (task 1a)")
         else:
-            last_hit_page_title = last_hit["title"]
+            last_hit_page_title = cast(str, last_hit["title"])
 
             # subtask a: if page title is missing, add it
             # subtask b: correct very obvious spelling mistakes in page titles (currently only case)
@@ -91,13 +94,16 @@ class EffpTask(Task):
                     if api.compare_page_titles(last_hit_page_title, page_title):
                         page_title_obviously_wrong = True
 
-                for pattern in self.get_task_configuration("page_title_wrong_formats"):
-                    wrong_spelling = search(pattern, page_title)
-                    if wrong_spelling is not None:
-                        if api.compare_page_titles(
-                            wrong_spelling.group(1), last_hit_page_title
-                        ):
-                            page_title_obviously_wrong = True
+                if page_title:
+                    for pattern in self.get_task_configuration(
+                        "page_title_wrong_formats"
+                    ):
+                        wrong_spelling = search(pattern, page_title)
+                        if wrong_spelling is not None:
+                            if api.compare_page_titles(
+                                wrong_spelling.group(1), last_hit_page_title
+                            ):
+                                page_title_obviously_wrong = True
 
             if page_title_missing or page_title_obviously_wrong:
                 last_hit_filter_log = self.get_task_configuration(
@@ -134,14 +140,16 @@ class EffpTask(Task):
                     break
 
             if private != 0:
-                new_section += ":{{EFFP|p|bot=1}}<!-- " + str(private) + " --> ~~~~\n"
+                new_section += f":{{EFFP|p|bot=1}}<!-- {str(private)} --> ~~~~\n"
                 edit_summary.append("Add private filter notice (task 1c)")
 
         if new_section != section:
             return new_section, edit_summary
         return section, []
 
-    def process_existing_report(self, section: str, user_name: str, api: MediawikiApi):
+    def process_existing_report(
+        self, section: str, user_name: str, api: MediawikiApi
+    ) -> tuple[str, list[str]]:
         """Used to process an existing section"""
         if not section.endswith("\n"):
             section += "\n"
@@ -163,7 +171,7 @@ class EffpTask(Task):
             return section, []
 
         # subtask d: notify if blocked
-        if user.isBlocked():
+        if user.is_blocked():
             blocked_by = user.getprops()["blockedby"]
             new_section += ":{{EFFP|b|%s|%s|bot=1}} ~~~~\n" % (
                 user.username,
@@ -175,7 +183,7 @@ class EffpTask(Task):
             return new_section, edit_summary
         return section, []
 
-    def get_sections(self, page: str) -> tuple:
+    def get_sections(self, page: str) -> tuple[str, list[tuple[str, str]]]:
         """Parses a page and returns all sections in it"""
         section_header_pattern = compile(self.get_task_configuration("section_header"))
         sections = []
@@ -199,7 +207,7 @@ class EffpTask(Task):
         return header + "\n", sections
 
     def create_edit_summary(
-        self, archived_sections: list, given_summaries: dict
+        self, archived_sections: list[str], given_summaries: dict[str, list[str]]
     ) -> str:
         processed_sections = list(given_summaries.keys())
         process_reasons = {}
@@ -240,7 +248,7 @@ class EffpTask(Task):
 
         return "Bot clerking: " + ", ".join(summary)
 
-    def process_page(self, page_name: str, api: MediawikiApi):
+    def process_page(self, page_name: str, api: MediawikiApi) -> None:
         LOGGER.info("Processing page %s", page_name)
 
         """Processes the EFFPR page"""
@@ -276,7 +284,7 @@ class EffpTask(Task):
                 LOGGER.info("Processing section by %s", section_user)
 
                 new_text = section_text
-                new_summaries = []
+                new_summaries: list[str] = []
                 if i >= len(old_sections):
                     new_text, new_summaries = self.process_new_report(
                         new_text, section_user, api
@@ -361,7 +369,7 @@ class EffpTask(Task):
         archive_page.text = header + "".join(section_texts)
         archive_page.save(summary, minor=False, botflag=self.should_use_bot_flag())
 
-    def run(self):
+    def run(self) -> None:
         api = self.get_mediawiki_api()
 
         LOGGER.info("Processing page once")
@@ -372,7 +380,7 @@ class EffpTask(Task):
 
         # if change streams are available for that page, use it; otherwise just process it once
         try:
-            self.stream = api.get_page_change_stream(
+            stream = api.get_page_change_stream(
                 self.get_task_configuration("reports_page")
             )
         except:
@@ -380,7 +388,10 @@ class EffpTask(Task):
             return
 
         LOGGER.info("Now listening for EFFPR edits")
-        for change in self.stream:
+        for change in stream:
+            if self.stop:
+                break
+
             if (
                 "!nobot!" in change["comment"]
                 or "Reverted " in change["comment"]
@@ -392,9 +403,11 @@ class EffpTask(Task):
 
         LOGGER.error("EventStream dried")  # auto restart?
 
-    def task_configuration_reloaded(self, old, new):
+    def task_configuration_reloaded(
+        self, old: dict[str, Any], new: dict[str, Any]
+    ) -> None:
         if "reports_page" in old and old["reports_page"] != new["reports_page"]:
-            self.stream = []  # dry stream
+            self.stop = True
 
     def should_archive(self, text: str, api: MediawikiApi) -> bool:
         # if there is a signature in text, do not archive as it was modified in this round.
