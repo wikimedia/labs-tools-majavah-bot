@@ -113,11 +113,7 @@ class EffpTask(Task):
                 section_pre_subst = new_section
                 new_section = sub(
                     self.get_task_configuration("page_title_regex"),
-                    ";Page you were editing\n: [["
-                    + last_hit_page_title
-                    + ']] (<span class="plainlinks">['
-                    + last_hit_filter_log
-                    + " filter log]</span>)\n",
+                    f';Page you were editing\n: [[{last_hit_page_title}]] (<span class="plainlinks">[{last_hit_filter_log} filter log]</span>)\n',
                     new_section,
                 )
 
@@ -161,10 +157,7 @@ class EffpTask(Task):
             user = api.get_user(user_name)
         except InvalidTitleError:
             if "{{EFFP|" not in section and "<" not in user_name:
-                new_section += (
-                    ":{{EFFP|note|bot=1}} Failed to retrieve details about user <code><nowiki>%s</nowiki></code>! ~~~~\n"
-                    % user_name
-                )
+                new_section += f":{{{{EFFP|note|bot=1}}}} Failed to retrieve details about user <code><nowiki>{user_name}</nowiki></code>! ~~~~\n"
                 edit_summary.append("Failed to load user details")
                 return new_section, edit_summary
 
@@ -173,10 +166,7 @@ class EffpTask(Task):
         # subtask d: notify if blocked
         if user.is_blocked():
             blocked_by = user.getprops()["blockedby"]
-            new_section += ":{{EFFP|b|%s|%s|bot=1}} ~~~~\n" % (
-                user.username,
-                blocked_by,
-            )
+            new_section += f":{{{{EFFP|b|{user.username}|{blocked_by}|bot=1}}}} ~~~~\n"
             edit_summary.append("Notify if user is blocked. (task 1d)")
 
         if new_section != section:
@@ -189,7 +179,7 @@ class EffpTask(Task):
         sections = []
 
         # add a \n to beginning, since the regex needs one
-        page = "\n" + page
+        page = f"\n{page}"
         matches = list(section_header_pattern.finditer(page))
 
         if len(matches) == 0:
@@ -198,7 +188,7 @@ class EffpTask(Task):
         for i in range(len(matches)):
             match = matches[i]
             end = matches[i + 1].start() - 1 if i < (len(matches) - 1) else len(page)
-            sections.append((match.group(1).strip(), page[match.start() : end] + "\n"))
+            sections.append((match.group(1).strip(), f"{page[match.start(): end]}\n"))
 
         header = page[: matches[0].start() - 1]
         # cut out the first line ending added when passing the page text to the regex
@@ -224,7 +214,7 @@ class EffpTask(Task):
         if len(processed_sections) == 1:
             if len(process_reasons.keys()) <= 3:
                 summary.append(
-                    "Processed a section: " + (", ".join(process_reasons.keys()))
+                    f"Processed a section: {(', '.join(process_reasons.keys()))}"
                 )
             else:
                 summary.append("Processed a section")
@@ -232,21 +222,17 @@ class EffpTask(Task):
             if len(process_reasons.keys()) == 1:
                 reason = list(process_reasons.keys())[0]
                 summary.append(
-                    "Process "
-                    + str(len(processed_sections))
-                    + " sections ("
-                    + reason
-                    + ")"
+                    f"Process {str(len(processed_sections))} sections ({reason})"
                 )
             else:
-                summary.append("Process " + str(len(processed_sections)) + " sections")
+                summary.append(f"Process {str(len(processed_sections))} sections")
 
         if len(archived_sections) > 1:
-            summary.append("Archive " + str(len(archived_sections)) + " sections")
+            summary.append(f"Archive {str(len(archived_sections))} sections")
         elif len(archived_sections) > 0:
             summary.append("Archive one section")
 
-        return "Bot clerking: " + ", ".join(summary)
+        return f"Bot clerking: {', '.join(summary)}"
 
     def process_page(self, page_name: str, api: MediawikiApi) -> None:
         LOGGER.info("Processing page %s", page_name)
@@ -339,7 +325,7 @@ class EffpTask(Task):
 
             summary = self.create_edit_summary(archive_section_titles, summaries)
             LOGGER.info("Saving, edit summary = %s", summary)
-            new_text = current_preface + "".join(section_texts)
+            new_text = f"{current_preface}{''.join(section_texts)}"
             page.text = new_text
             page.save(summary, minor=False, botflag=self.should_use_bot_flag())
         else:
@@ -365,8 +351,8 @@ class EffpTask(Task):
         for section in sections:
             section_texts.append(section[1])
 
-        summary = "Add %s archived sections (task 1e)" % len(new_sections)
-        archive_page.text = header + "".join(section_texts)
+        summary = f"Add {len(new_sections)} archived sections (task 1e)"
+        archive_page.text = f"{header}{''.join(section_texts)}"
         archive_page.save(summary, minor=False, botflag=self.should_use_bot_flag())
 
     def run(self) -> None:
