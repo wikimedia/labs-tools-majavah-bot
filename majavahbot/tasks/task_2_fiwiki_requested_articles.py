@@ -17,7 +17,14 @@ SELECT page_title FROM page
 WHERE page_namespace = 0
 AND page_is_redirect = 0
 AND page_title IN ({})
-AND NOT EXISTS (SELECT cl_from FROM categorylinks WHERE cl_from = page.page_id AND cl_to IN ("Täsmennyssivut", "Pikapoisto"))
+AND NOT EXISTS (
+    SELECT cl_from
+    FROM categorylinks
+    JOIN linktarget ON lt_id = cl_target_id
+    WHERE cl_from = page.page_id
+    AND lt_namespace = 14
+    AND lt_title IN ("Täsmennyssivut", "Pikapoisto")
+)
 AND EXISTS (SELECT fp_page_id FROM flaggedpages WHERE fp_page_id = page.page_id AND fp_reviewed = 1)
 """
 
