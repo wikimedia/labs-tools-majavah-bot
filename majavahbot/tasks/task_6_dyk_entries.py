@@ -29,8 +29,10 @@ where
     and exists (
         select 1
         from categorylinks
+        join linktarget ON lt_id = cl_target_id
         where cl_from = page_id
-        and cl_to = "Pages_with_a_missing_DYK_entry"
+        and lt_namespace = 14
+        and lt_title = "Pages_with_a_missing_DYK_entry"
     )
     and exists (
         select 1
