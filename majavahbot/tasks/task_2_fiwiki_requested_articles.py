@@ -127,13 +127,14 @@ class FiwikiRequestedArticlesTask(Task):
                 raise RuntimeError(
                     "text == new_text but at least one entry should be removed"
                 )
+            removed_formatted = [
+                f"[[{page.replace('_', '')}]]" for page in removed_entries
+            ]
             summary = "Botti poisti " + (
-                (str(removed_length) + " täytettyä artikkelitoivetta")
+                f"{str(removed_length)} täytettyä artikkelitoivetta"
                 if removed_length > 3
                 else (
-                    "seuraavat täytetyt artikkelitoiveet: [["
-                    + "]], [[".join(removed_entries)
-                    + "]]"
+                    f"seuraavat täytetyt artikkelitoiveet: {', '.join(removed_formatted)}"
                 )
             )
 
