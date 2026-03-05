@@ -128,7 +128,7 @@ class FiwikiRequestedArticlesTask(Task):
                     "text == new_text but at least one entry should be removed"
                 )
             removed_formatted = [
-                f"[[{page.replace('_', '')}]]" for page in removed_entries
+                f"[[{page.replace('_', ' ')}]]" for page in removed_entries
             ]
             summary = "Botti poisti " + (
                 f"{str(removed_length)} täytettyä artikkelitoivetta"
