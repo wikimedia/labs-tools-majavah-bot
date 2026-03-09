@@ -221,8 +221,9 @@ class StewardRequestTask(Task):
         if status.has(1) and status.get(1).value != "":
             return status.get(1).value.lower() not in OPEN_STATUSES
 
-        if ("unlock" in header and "/unlock" not in header) or (
-            "unblock" in header and "/unblock" not in header
+        title = header.title.lower()
+        if ("unlock" in title and "/unlock" not in title) or (
+            "unblock" in title and "/unblock" not in title
         ):
             LOGGER.info(
                 "Assuming section '%s' is a un(b)lock request, skipping", header
