@@ -136,7 +136,7 @@ class EffpTask(Task):
                     break
 
             if private != 0:
-                new_section += f":{{EFFP|p|bot=1}}<!-- {str(private)} --> ~~~~\n"
+                new_section += f":{{{{EFFP|p|bot=1}}}}<!-- {str(private)} --> ~~~~\n"
                 edit_summary.append("Add private filter notice (task 1c)")
 
         if new_section != section:
